@@ -37,8 +37,8 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-const SPLASH_BACKGROUND_COLOR: Color = Color::srgb(0.157, 0.157, 0.157);
-const SPLASH_DURATION_SECS: f32 = 1.8;
+const SPLASH_BACKGROUND_COLOR: Color = Color::srgb(0.0, 0.0, 239.0);
+const SPLASH_DURATION_SECS: f32 = 2.8;
 const SPLASH_FADE_DURATION_SECS: f32 = 0.6;
 
 fn spawn_splash(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -55,7 +55,7 @@ fn spawn_splash(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ImageBundle {
                     style: Style {
                         margin: UiRect::all(Val::Auto),
-                        width: Val::Percent(70.0),
+                        height: Val::Percent(100.0),
                         ..default()
                     },
                     image: UiImage::new(asset_server.load_with_settings(
@@ -65,7 +65,7 @@ fn spawn_splash(mut commands: Commands, asset_server: Res<AssetServer>) {
                         |settings: &mut ImageLoaderSettings| {
                             // Make an exception for the splash image in case
                             // `ImagePlugin::default_nearest()` is used for pixel art.
-                            settings.sampler = ImageSampler::linear();
+                            settings.sampler = ImageSampler::nearest();
                         },
                     )),
                     ..default()

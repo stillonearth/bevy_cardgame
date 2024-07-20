@@ -1,12 +1,19 @@
 //! The title screen that appears when the game starts.
 
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::texture::{ImageLoaderSettings, ImageSampler},
+};
 
 use super::Screen;
-use crate::ui::prelude::*;
+use crate::{
+    game::{assets::SoundtrackKey, audio::soundtrack::PlaySoundtrack},
+    ui::prelude::*,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::Title), enter_title);
+    app.add_systems(OnExit(Screen::Title), exit_title);
 
     app.register_type::<TitleAction>();
     app.add_systems(Update, handle_title_action.run_if(in_state(Screen::Title)));
@@ -22,9 +29,57 @@ enum TitleAction {
     Exit,
 }
 
-fn enter_title(mut commands: Commands) {
+const TITLE_BACKGROUND_COLOR: Color = Color::srgb(0.0, 0.0, 239.0);
+
+fn enter_title(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .ui_root()
+        .insert((
+            Name::new("Splash screen"),
+            BackgroundColor(TITLE_BACKGROUND_COLOR),
+            StateScoped(Screen::Splash),
+        ))
+        .with_children(|children| {
+            children.spawn((
+                Name::new("Splash image"),
+                ImageBundle {
+                    style: Style {
+                        margin: UiRect::all(Val::Auto),
+                        height: Val::Percent(100.0),
+                        ..default()
+                    },
+                    image: UiImage::new(asset_server.load_with_settings(
+                        // This should be an embedded asset for instant loading, but that is
+                        // currently [broken on Windows Wasm builds](https://github.com/bevyengine/bevy/issues/14246).
+                        "images/laboratory.png",
+                        |settings: &mut ImageLoaderSettings| {
+                            // Make an exception for the splash image in case
+                            // `ImagePlugin::default_nearest()` is used for pixel art.
+                            settings.sampler = ImageSampler::nearest();
+                        },
+                    )),
+                    ..default()
+                },
+            ));
+        });
+
+    commands
+        .spawn((
+            Name::new("UI Root"),
+            NodeBundle {
+                style: Style {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::FlexEnd,
+                    flex_direction: FlexDirection::Column,
+                    row_gap: Val::Px(10.0),
+                    position_type: PositionType::Absolute,
+                    ..default()
+                },
+                ..default()
+            },
+        ))
         .insert(StateScoped(Screen::Title))
         .with_children(|children| {
             children.button("Play").insert(TitleAction::Play);
@@ -33,6 +88,8 @@ fn enter_title(mut commands: Commands) {
             #[cfg(not(target_family = "wasm"))]
             children.button("Exit").insert(TitleAction::Exit);
         });
+
+    commands.trigger(PlaySoundtrack::Key(SoundtrackKey::Title));
 }
 
 fn handle_title_action(
@@ -53,4 +110,9 @@ fn handle_title_action(
             }
         }
     }
+}
+
+fn exit_title(mut commands: Commands) {
+    // We could use [`StateScoped`] on the sound playing entites instead.
+    commands.trigger(PlaySoundtrack::Disable);
 }

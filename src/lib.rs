@@ -7,8 +7,10 @@ mod ui;
 use bevy::{
     asset::AssetMetaCheck,
     audio::{AudioPlugin, Volume},
+    input::common_conditions::input_toggle_active,
     prelude::*,
 };
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 pub struct AppPlugin;
 
@@ -58,6 +60,11 @@ impl Plugin for AppPlugin {
         // Enable dev tools for dev builds.
         #[cfg(feature = "dev")]
         app.add_plugins(dev_tools::plugin);
+
+        #[cfg(feature = "dev")]
+        app.add_plugins(
+            WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::Escape)),
+        );
     }
 }
 
