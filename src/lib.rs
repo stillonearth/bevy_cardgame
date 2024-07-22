@@ -11,6 +11,8 @@ use bevy::{
     prelude::*,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_la_mesa::{LaMesaPlugin, LaMesaPluginSettings};
+use game::cards::{load_deck, Kard};
 
 pub struct AppPlugin;
 
@@ -29,9 +31,6 @@ impl Plugin for AppPlugin {
         app.add_plugins(
             DefaultPlugins
                 .set(AssetPlugin {
-                    // Wasm builds will check for meta files (that don't exist) if this isn't set.
-                    // This causes errors and even panics on web build on itch.
-                    // See https://github.com/bevyengine/bevy_github_ci_template/issues/48.
                     meta_check: AssetMetaCheck::Never,
                     ..default()
                 })
@@ -53,6 +52,13 @@ impl Plugin for AppPlugin {
                     ..default()
                 }),
         );
+
+        app.add_plugins(LaMesaPlugin::<Kard>::default())
+            .insert_resource(LaMesaPluginSettings::<Kard> {
+                num_players: 1,
+                back_card_path: "tarjetas/back.png".to_string(),
+                deck: load_deck(1),
+            });
 
         // Add other plugins.
         app.add_plugins((game::plugin, screen::plugin, ui::plugin));
@@ -84,7 +90,10 @@ enum AppSet {
 fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Name::new("Camera"),
-        Camera2dBundle::default(),
+        Camera3dBundle {
+            transform: Transform::from_xyz(0.0, 10.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        },
         // Render all UI to this camera.
         // Not strictly necessary since we only use one camera,
         // but if we don't use this component, our UI will disappear as soon
