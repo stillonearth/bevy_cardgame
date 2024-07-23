@@ -13,6 +13,7 @@ fn play_soundtrack(
     soundtrack_handles: Res<HandleMap<SoundtrackKey>>,
     soundtrack_query: Query<Entity, With<IsSoundtrack>>,
 ) {
+    return;
     for entity in &soundtrack_query {
         commands.entity(entity).despawn_recursive();
     }

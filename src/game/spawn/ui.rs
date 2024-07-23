@@ -1,7 +1,10 @@
 //! Spawn the main level by triggering other observers.
 
 use bevy::prelude::*;
+use bevy_la_mesa::events::{CardPress, PlaceCardOnTable};
+use bevy_la_mesa::{Card, CardOnTable, Deck, Hand, PlayArea};
 
+use crate::game::cards::Kard;
 use crate::screen::Screen;
 use crate::ui::widgets::Widgets;
 
@@ -18,7 +21,8 @@ pub enum CardGameUIAction {
 }
 
 pub(super) fn plugin(app: &mut App) {
-    app.observe(spawn_card_game_ui);
+    app.observe(spawn_card_game_ui)
+        .add_systems(Update, handle_card_press);
 }
 
 fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
@@ -27,7 +31,7 @@ fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
             Name::new("UI Root"),
             NodeBundle {
                 style: Style {
-                    width: Val::Px(200.0),
+                    width: Val::Px(216.0),
                     height: Val::Percent(100.0),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::FlexEnd,
@@ -61,4 +65,22 @@ fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
                 .button("Draw Hand")
                 .insert(CardGameUIAction::DrawHand);
         });
+}
+
+pub fn handle_card_press(
+    mut card_press: EventReader<CardPress>,
+    mut set: ParamSet<(
+        Query<(Entity, &Card<Kard>, &mut Transform, &CardOnTable)>,
+        Query<(Entity, &Transform, &PlayArea)>,
+    )>,
+    mut ew_place_card_on_table: EventWriter<PlaceCardOnTable>,
+) {
+    for event in card_press.read() {
+        let markers: Vec<usize> = set.p0().iter().map(|(_, _, _, card)| card.marker).collect();
+        let largest_marker = markers.iter().max().unwrap_or(&0) + 1;
+        ew_place_card_on_table.send(PlaceCardOnTable {
+            card_entity: event.card_entity,
+            marker: largest_marker,
+        });
+    }
 }

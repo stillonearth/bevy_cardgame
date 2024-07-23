@@ -1,7 +1,8 @@
 use bevy::{app::App, prelude::*};
-use bevy_la_mesa::{CardMetadata, LaMesaPluginSettings};
+use bevy_la_mesa::{events::CardPress, Card, CardMetadata, Deck, LaMesaPluginSettings};
 
 use std::fmt::Debug;
+use std::marker::Send;
 
 #[derive(Clone, Copy, Debug, Default)]
 enum CardType {
