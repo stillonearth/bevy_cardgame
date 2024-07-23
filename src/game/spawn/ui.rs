@@ -72,10 +72,18 @@ pub fn handle_card_press(
     mut set: ParamSet<(
         Query<(Entity, &Card<Kard>, &mut Transform, &CardOnTable)>,
         Query<(Entity, &Transform, &PlayArea)>,
+        Query<(Entity, &Card<Kard>, &Hand)>,
     )>,
     mut ew_place_card_on_table: EventWriter<PlaceCardOnTable>,
 ) {
     for event in card_press.read() {
+        // allow only for cards in hand
+        let binding = set.p2();
+        let hand = binding.get(event.card_entity).ok();
+        if hand.is_none() {
+            continue;
+        }
+
         let markers: Vec<usize> = set.p0().iter().map(|(_, _, _, card)| card.marker).collect();
         let largest_marker = markers.iter().max().unwrap_or(&0) + 1;
         ew_place_card_on_table.send(PlaceCardOnTable {
