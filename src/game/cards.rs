@@ -144,7 +144,7 @@ pub enum TurnPhase {
 pub struct GameState {
     pub turn_number: usize,
     pub phase: TurnPhase,
-    pub player_number: usize,
+    pub player: usize,
 }
 
 impl GameState {
@@ -154,11 +154,11 @@ impl GameState {
             TurnPhase::Action => TurnPhase::Event,
             TurnPhase::Event => TurnPhase::End,
             TurnPhase::End => {
-                if self.player_number == num_players {
+                if self.player == num_players {
                     self.turn_number += 1;
-                    self.player_number = 1;
+                    self.player = 1;
                 } else {
-                    self.player_number += 1;
+                    self.player += 1;
                 }
                 TurnPhase::Prepare
             }
@@ -190,7 +190,7 @@ pub(super) fn plugin(app: &mut App) {
     app.insert_resource(GameState {
         turn_number: 0,
         phase: TurnPhase::Prepare,
-        player_number: 1,
+        player: 1,
     })
     .add_event::<NextPhase>()
     .add_event::<DropChip>()
@@ -243,14 +243,14 @@ pub fn handle_switch_player(
     mut query: Query<(&mut Transform, &GameCamera)>,
 ) {
     for _ in er_drop_chip.read() {
-        game_state.player_number = match game_state.player_number {
+        game_state.player = match game_state.player {
             1 => 2,
             2 => 1,
             _ => 1,
         };
 
         for (mut transform, _) in query.iter_mut() {
-            if game_state.player_number == 1 {
+            if game_state.player == 1 {
                 *transform = Transform::from_xyz(0.0, 12.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y);
             } else {
                 *transform = Transform::from_xyz(-3.0, 12.0, -15.0)

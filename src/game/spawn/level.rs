@@ -66,7 +66,7 @@ fn spawn_board(
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI / 2.0)),
             ..default()
         },
-        DeckArea,
+        DeckArea { marker: 1 },
         Name::new("Deck"),
     ));
 
@@ -257,8 +257,8 @@ fn spawn_board(
             ..default()
         },
         PlayArea {
-            marker: 1,
-            player: 1,
+            marker: 5,
+            player: 2,
         },
         Name::new("Play Area 1 - Player 2"),
     ));
@@ -273,8 +273,8 @@ fn spawn_board(
             ..default()
         },
         PlayArea {
-            marker: 2,
-            player: 1,
+            marker: 4,
+            player: 2,
         },
         Name::new("Play Area 2 - Player 2"),
     ));
@@ -290,7 +290,7 @@ fn spawn_board(
         },
         PlayArea {
             marker: 3,
-            player: 1,
+            player: 2,
         },
         Name::new("Play Area 3 - Player 2"),
     ));
@@ -305,8 +305,8 @@ fn spawn_board(
             ..default()
         },
         PlayArea {
-            marker: 4,
-            player: 1,
+            marker: 2,
+            player: 2,
         },
         Name::new("Play Area 4 - Player 2"),
     ));
@@ -321,8 +321,8 @@ fn spawn_board(
             ..default()
         },
         PlayArea {
-            marker: 5,
-            player: 1,
+            marker: 1,
+            player: 2,
         },
         Name::new("Play Area 5 - Player 2"),
     ));
@@ -451,8 +451,10 @@ pub fn render_hand_area(mut commands: Commands) {
     commands.spawn((
         Name::new("HandArea - Player 2"),
         TransformBundle {
-            local: Transform::from_translation(Vec3::new(0.0, 3.5, -5.8))
-                .with_rotation(Quat::from_rotation_x(std::f32::consts::PI / 4.0)),
+            local: Transform::from_translation(Vec3::new(0.0, 3.5, -5.8)).with_rotation(
+                Quat::from_rotation_x(-std::f32::consts::PI / 4.0)
+                    * Quat::from_rotation_y(std::f32::consts::PI),
+            ),
             ..default()
         },
         HandArea { player: 2 },

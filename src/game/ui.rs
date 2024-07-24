@@ -24,6 +24,7 @@ fn handle_gameplay_action(
     mut ew_switch_player: EventWriter<SwitchPlayer>,
     decks: Query<(Entity, &DeckArea)>,
     chips: Query<(Entity, &Transform, &Chip<ChipType>, &ChipArea)>,
+    state: Res<GameState>,
 ) {
     for (interaction, action) in &mut button_query {
         let deck_entity = decks.iter().next().unwrap().0;
@@ -38,10 +39,10 @@ fn handle_gameplay_action(
                     let event = DrawHand {
                         deck_entity,
                         num_cards: 5,
-                        player: 1,
+                        player: state.player,
                     };
                     ew_draw.send(event);
-                    ew_next_phase.send(NextPhase);
+                    // ew_next_phase.send(NextPhase);
                 }
                 CardGameUIAction::ButtonDropChip => {
                     let event = DropChip {
@@ -137,7 +138,7 @@ fn handle_labels(
                 CardGameUIAction::ButtonMoveChip => {}
                 CardGameUIAction::ButtonAdvancePhase => {}
                 CardGameUIAction::LabelPlayerNumber => {
-                    text.sections[0].value = format!("Player number: {}", state.player_number)
+                    text.sections[0].value = format!("Player number: {}", state.player)
                 }
                 CardGameUIAction::ButtonSwitchPlayer => {}
             }
