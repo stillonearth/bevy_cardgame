@@ -5,7 +5,7 @@ use bevy_la_mesa::{
 };
 
 use super::{
-    cards::{ChipType, DropChip, GameState, MoveChip, NextPhase, TurnPhase},
+    cards::{ChipType, DropChip, GameState, MoveChip, NextPhase, SwitchPlayer, TurnPhase},
     spawn::ui::CardGameUIAction,
 };
 use crate::ui::prelude::InteractionQuery;
@@ -15,13 +15,13 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 fn handle_gameplay_action(
-    mut commands: Commands,
     mut button_query: InteractionQuery<&CardGameUIAction>,
     mut ew_shuffle: EventWriter<DeckShuffle>,
     mut ew_draw: EventWriter<DrawHand>,
     mut ew_next_phase: EventWriter<NextPhase>,
     mut ew_drop_chip: EventWriter<DropChip>,
     mut ew_move_chip: EventWriter<MoveChip>,
+    mut ew_switch_player: EventWriter<SwitchPlayer>,
     decks: Query<(Entity, &DeckArea)>,
     chips: Query<(Entity, &Transform, &Chip<ChipType>, &ChipArea)>,
 ) {
@@ -79,6 +79,10 @@ fn handle_gameplay_action(
                         area: 2,
                     };
                     ew_move_chip.send(event);
+                }
+                CardGameUIAction::ButtonAdvancePhase => {}
+                CardGameUIAction::ButtonSwitchPlayer => {
+                    ew_switch_player.send(SwitchPlayer);
                 }
                 _ => {}
             }

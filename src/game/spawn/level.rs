@@ -11,14 +11,8 @@ use crate::game::cards::{ChipType, DropChip, GameState, Kard, MoveChip};
 pub(super) fn plugin(app: &mut App) {
     app.observe(spawn_level);
     app.observe(spawn_board);
-    app.add_systems(
-        Update,
-        (
-            handle_drop_chip,
-            handle_move_chip_to_sales,
-            render_hand_area,
-        ),
-    );
+    app.add_systems(Update, (handle_drop_chip, handle_move_chip_to_sales))
+        .add_systems(Startup, render_hand_area);
 }
 
 #[derive(Event, Debug)]

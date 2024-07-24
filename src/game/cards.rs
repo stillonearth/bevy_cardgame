@@ -1,8 +1,11 @@
+use bevy::ecs::query;
 use bevy::{app::App, prelude::*};
 use bevy_la_mesa::{events::CardPress, Card, CardMetadata, Deck, LaMesaPluginSettings};
 
 use std::fmt::Debug;
 use std::marker::Send;
+
+use crate::GameCamera;
 
 #[derive(Clone, Copy, Debug, Default)]
 enum CardType {
@@ -238,6 +241,7 @@ pub fn handle_move_chip(
 pub fn handle_switch_player(
     mut er_drop_chip: EventReader<SwitchPlayer>,
     mut game_state: ResMut<GameState>,
+    mut query: Query<(&mut Transform, &GameCamera)>,
 ) {
     for _ in er_drop_chip.read() {
         game_state.player_number = match game_state.player_number {
@@ -245,5 +249,13 @@ pub fn handle_switch_player(
             2 => 1,
             _ => 1,
         };
+
+        for (mut transform, _) in query.iter_mut() {
+            if game_state.player_number == 1 {
+                *transform = Transform::from_xyz(0.0, 12.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y);
+            } else {
+                *transform = Transform::from_xyz(0.0, 12.0, -15.0).looking_at(Vec3::ZERO, Vec3::Y);
+            }
+        }
     }
 }

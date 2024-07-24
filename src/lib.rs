@@ -88,6 +88,9 @@ enum AppSet {
     Update,
 }
 
+#[derive(Component)]
+pub struct GameCamera;
+
 fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Name::new("Camera"),
@@ -102,5 +105,6 @@ fn spawn_camera(mut commands: Commands) {
         // [ui node outlines](https://bevyengine.org/news/bevy-0-14/#ui-node-outline-gizmos)
         // for debugging. So it's good to have this here for future-proofing.
         IsDefaultUiCamera,
+        GameCamera,
     ));
 }
