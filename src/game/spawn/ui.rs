@@ -13,11 +13,16 @@ use super::level::SpawnBoard;
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Reflect)]
 #[reflect(Component)]
 pub enum CardGameUIAction {
-    ShuffleDeck,
-    DrawHand,
-    TurnNumber,
-    TurnPhase,
-    PhaseDescription,
+    ButtonShuffleDeck,
+    ButtonDrawHand,
+    ButtonDropChip,
+    ButtonMoveChip,
+    ButtonAdvancePhase,
+    ButtonSwitchPlayer,
+    LabelPlayerNumber,
+    LabelTurnNumber,
+    LabelTurnPhase,
+    LabelPhaseDescription,
 }
 
 pub(super) fn plugin(app: &mut App) {
@@ -51,19 +56,34 @@ fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
         .with_children(|children| {
             children
                 .label("Turn number: 1")
-                .insert(CardGameUIAction::TurnNumber);
+                .insert(CardGameUIAction::LabelTurnNumber);
+            children
+                .label("Player number: 1")
+                .insert(CardGameUIAction::LabelPlayerNumber);
             children
                 .label("Turn phase: Prepare")
-                .insert(CardGameUIAction::TurnPhase);
+                .insert(CardGameUIAction::LabelTurnPhase);
             children
                 .label("Phase Description")
-                .insert(CardGameUIAction::PhaseDescription);
+                .insert(CardGameUIAction::LabelPhaseDescription);
+            children
+                .button("Switch Player")
+                .insert(CardGameUIAction::ButtonSwitchPlayer);
             children
                 .button("Shuffle Deck")
-                .insert(CardGameUIAction::ShuffleDeck);
+                .insert(CardGameUIAction::ButtonShuffleDeck);
             children
                 .button("Draw Hand")
-                .insert(CardGameUIAction::DrawHand);
+                .insert(CardGameUIAction::ButtonDrawHand);
+            children
+                .button("Advance Phase")
+                .insert(CardGameUIAction::ButtonAdvancePhase);
+            // children
+            //     .button("Drop Chip")
+            //     .insert(CardGameUIAction::ButtonDropChip);
+            // children
+            //     .button("Move Chip")
+            //     .insert(CardGameUIAction::ButtonMoveChip);
         });
 }
 

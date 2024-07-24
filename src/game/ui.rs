@@ -1,11 +1,11 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, transform::commands};
 use bevy_la_mesa::{
     events::{DeckShuffle, DrawHand},
-    DeckArea,
+    Chip, ChipArea, DeckArea,
 };
 
 use super::{
-    cards::{GameState, NextPhase, TurnPhase},
+    cards::{ChipType, DropChip, GameState, MoveChip, NextPhase, TurnPhase},
     spawn::ui::CardGameUIAction,
 };
 use crate::ui::prelude::InteractionQuery;
@@ -15,22 +15,26 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 fn handle_gameplay_action(
+    mut commands: Commands,
     mut button_query: InteractionQuery<&CardGameUIAction>,
     mut ew_shuffle: EventWriter<DeckShuffle>,
     mut ew_draw: EventWriter<DrawHand>,
     mut ew_next_phase: EventWriter<NextPhase>,
+    mut ew_drop_chip: EventWriter<DropChip>,
+    mut ew_move_chip: EventWriter<MoveChip>,
     decks: Query<(Entity, &DeckArea)>,
+    chips: Query<(Entity, &Transform, &Chip<ChipType>, &ChipArea)>,
 ) {
     for (interaction, action) in &mut button_query {
         let deck_entity = decks.iter().next().unwrap().0;
 
         if matches!(interaction, Interaction::Pressed) {
             match action {
-                CardGameUIAction::ShuffleDeck => {
+                CardGameUIAction::ButtonShuffleDeck => {
                     let event = DeckShuffle { deck_entity };
                     ew_shuffle.send(event);
                 }
-                CardGameUIAction::DrawHand => {
+                CardGameUIAction::ButtonDrawHand => {
                     let event = DrawHand {
                         deck_entity,
                         num_cards: 5,
@@ -38,6 +42,43 @@ fn handle_gameplay_action(
                     };
                     ew_draw.send(event);
                     ew_next_phase.send(NextPhase);
+                }
+                CardGameUIAction::ButtonDropChip => {
+                    let event = DropChip {
+                        chip_type: ChipType::Cannabis,
+                        area: 1,
+                    };
+                    ew_drop_chip.send(event);
+                }
+                CardGameUIAction::ButtonMoveChip => {
+                    // 1. find highest chip in area
+                    let chips_in_area = chips
+                        .iter()
+                        .filter(|(_, _, chip, area)| {
+                            chip.data == ChipType::Cannabis && area.marker == 1
+                        })
+                        .count();
+
+                    if chips_in_area == 0 {
+                        continue;
+                    }
+
+                    let chip_entity = chips
+                        .iter()
+                        .filter(|(_, _, chip, area)| {
+                            chip.data == ChipType::Cannabis && area.marker == 1
+                        })
+                        .max_by_key(|(_, transform, _, _)| {
+                            (transform.translation.z * 100.0) as usize
+                        })
+                        .map(|(entity, _, _, _)| entity)
+                        .unwrap();
+
+                    let event = MoveChip {
+                        entity: chip_entity,
+                        area: 2,
+                    };
+                    ew_move_chip.send(event);
                 }
                 _ => {}
             }
@@ -56,27 +97,27 @@ fn handle_labels(
                 continue;
             }
             match ui_element {
-                CardGameUIAction::TurnNumber => {
+                CardGameUIAction::LabelTurnNumber => {
                     text.sections[0].value = format!("Turn number: {}", state.turn_number);
                 }
-                CardGameUIAction::TurnPhase => {
+                CardGameUIAction::LabelTurnPhase => {
                     text.sections[0].value = format!("Turn phase: {:?}", state.phase);
                 }
-                CardGameUIAction::ShuffleDeck => {
+                CardGameUIAction::ButtonShuffleDeck => {
                     if state.phase == TurnPhase::Prepare {
                         *visibility = Visibility::Visible;
                     } else {
                         *visibility = Visibility::Hidden;
                     }
                 }
-                CardGameUIAction::DrawHand => {
+                CardGameUIAction::ButtonDrawHand => {
                     if state.phase == TurnPhase::Prepare {
                         *visibility = Visibility::Visible;
                     } else {
                         *visibility = Visibility::Hidden;
                     }
                 }
-                CardGameUIAction::PhaseDescription => {
+                CardGameUIAction::LabelPhaseDescription => {
                     text.sections[0].value = match state.phase {
                         TurnPhase::Prepare => {
                             "You may shuffle the deck and draw 5 cards".to_string()
@@ -88,6 +129,13 @@ fn handle_labels(
                         TurnPhase::End => "Update your counters and pass turn".to_string(),
                     };
                 }
+                CardGameUIAction::ButtonDropChip => {}
+                CardGameUIAction::ButtonMoveChip => {}
+                CardGameUIAction::ButtonAdvancePhase => {}
+                CardGameUIAction::LabelPlayerNumber => {
+                    text.sections[0].value = format!("Player number: {}", state.player_number)
+                }
+                CardGameUIAction::ButtonSwitchPlayer => {}
             }
         }
     }

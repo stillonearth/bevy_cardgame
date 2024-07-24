@@ -20,6 +20,13 @@ enum CardType {
     Truck,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum ChipType {
+    #[default]
+    Cocaine,
+    Cannabis,
+}
+
 #[derive(Default, Clone, Debug)]
 pub struct Kard {
     pub card_type: CardType,
@@ -162,6 +169,21 @@ impl GameState {
 #[derive(Event)]
 pub struct NextPhase;
 
+#[derive(Event)]
+pub struct SwitchPlayer;
+
+#[derive(Event)]
+pub struct DropChip {
+    pub chip_type: ChipType,
+    pub area: usize,
+}
+
+#[derive(Debug, Event)]
+pub struct MoveChip {
+    pub entity: Entity,
+    pub area: usize,
+}
+
 pub(super) fn plugin(app: &mut App) {
     app.insert_resource(GameState {
         turn_number: 0,
@@ -169,7 +191,18 @@ pub(super) fn plugin(app: &mut App) {
         player_number: 1,
     })
     .add_event::<NextPhase>()
-    .add_systems(Update, handle_next_phase);
+    .add_event::<DropChip>()
+    .add_event::<MoveChip>()
+    .add_event::<SwitchPlayer>()
+    .add_systems(
+        Update,
+        (
+            handle_next_phase,
+            handle_drop_chip,
+            handle_move_chip,
+            handle_switch_player,
+        ),
+    );
 }
 
 pub fn handle_next_phase(
@@ -179,5 +212,38 @@ pub fn handle_next_phase(
 ) {
     for _ in er_next_phase.read() {
         game_state.advance(plugin_settings.num_players);
+    }
+}
+
+pub fn handle_drop_chip(
+    mut er_drop_chip: EventReader<DropChip>,
+    mut game_state: ResMut<GameState>,
+    plugin_settings: Res<LaMesaPluginSettings<Kard>>,
+) {
+    for drop_chip in er_drop_chip.read() {
+        println!("Dropping chip: {:?}", drop_chip.chip_type);
+    }
+}
+
+pub fn handle_move_chip(
+    mut er_drop_chip: EventReader<MoveChip>,
+    mut game_state: ResMut<GameState>,
+    plugin_settings: Res<LaMesaPluginSettings<Kard>>,
+) {
+    for move_chip in er_drop_chip.read() {
+        println!("Moving chip: {:?}", move_chip);
+    }
+}
+
+pub fn handle_switch_player(
+    mut er_drop_chip: EventReader<SwitchPlayer>,
+    mut game_state: ResMut<GameState>,
+) {
+    for _ in er_drop_chip.read() {
+        game_state.player_number = match game_state.player_number {
+            1 => 2,
+            2 => 1,
+            _ => 1,
+        };
     }
 }

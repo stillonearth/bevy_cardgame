@@ -12,6 +12,7 @@ use bevy::{
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_la_mesa::{LaMesaPlugin, LaMesaPluginSettings};
+use bevy_obj::ObjPlugin;
 use game::cards::{load_deck, Kard};
 
 pub struct AppPlugin;
@@ -53,7 +54,7 @@ impl Plugin for AppPlugin {
                 }),
         );
 
-        app.add_plugins(LaMesaPlugin::<Kard>::default())
+        app.add_plugins((LaMesaPlugin::<Kard>::default(), ObjPlugin))
             .insert_resource(LaMesaPluginSettings::<Kard> {
                 num_players: 1,
                 back_card_path: "tarjetas/back.png".to_string(),
@@ -91,7 +92,7 @@ fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Name::new("Camera"),
         Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 10.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(0.0, 15.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
         // Render all UI to this camera.
