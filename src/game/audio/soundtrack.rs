@@ -9,7 +9,7 @@ pub(super) fn plugin(app: &mut App) {
 
 fn play_soundtrack(
     trigger: Trigger<PlaySoundtrack>,
-    mut commands: Commands,
+    commands: Commands,
     soundtrack_handles: Res<HandleMap<SoundtrackKey>>,
     soundtrack_query: Query<Entity, With<IsSoundtrack>>,
 ) {

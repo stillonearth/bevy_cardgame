@@ -1,12 +1,10 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use bevy_la_mesa::{
-    events::RenderDeck, Chip, ChipArea, DeckArea, HandArea, LaMesaPluginSettings, PlayArea,
-};
+use bevy_la_mesa::{events::RenderDeck, Chip, ChipArea, DeckArea, HandArea, PlayArea};
 use bevy_tweening::{lens::TransformPositionLens, Animator, EaseFunction, Tween};
 
-use crate::game::cards::{ChipType, DropChip, GameState, Kard, MoveChip};
+use crate::game::cards::{ChipType, DropChip, MoveChip};
 
 pub(super) fn plugin(app: &mut App) {
     app.observe(spawn_level);
@@ -46,7 +44,16 @@ fn spawn_board(
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform::from_xyz(0.0, 4.0, 4.0),
+        transform: Transform::from_xyz(0.0, 7.0, 7.0),
+        ..default()
+    });
+
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform::from_xyz(0.0, 7.0, -7.0),
         ..default()
     });
 
@@ -161,64 +168,163 @@ fn spawn_board(
         ..Default::default()
     });
 
+    // ------------------------------
+
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
-            transform: Transform::from_translation(Vec3::new(-7.6, 0.0, -0.4)),
-            visibility: Visibility::Hidden,
+            transform: Transform::from_translation(Vec3::new(-7.6, 0.0, 6.2)),
+            // visibility: Visibility::Hidden,
             ..default()
         },
-        PlayArea { marker: 1 },
-        Name::new("Play Area 1"),
+        PlayArea {
+            marker: 1,
+            player: 1,
+        },
+        Name::new("Play Area 1 - Player 1"),
     ));
 
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
-            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05, 0.0, -0.4)),
-            visibility: Visibility::Hidden,
+            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05, 0.0, 6.2)),
+            // visibility: Visibility::Hidden,
             ..default()
         },
-        PlayArea { marker: 2 },
-        Name::new("Play Area 2"),
+        PlayArea {
+            marker: 2,
+            player: 1,
+        },
+        Name::new("Play Area 2 - Player 2"),
     ));
 
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
-            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 2.0, 0.0, -0.4)),
-            visibility: Visibility::Hidden,
+            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 2.0, 0.0, 6.2)),
+            // visibility: Visibility::Hidden,
             ..default()
         },
-        PlayArea { marker: 3 },
-        Name::new("Play Area 3"),
+        PlayArea {
+            marker: 3,
+            player: 1,
+        },
+        Name::new("Play Area 3 - Player 3"),
     ));
 
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
-            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 3.0, 0.0, -0.4)),
-            visibility: Visibility::Hidden,
+            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 3.0, 0.0, 6.2)),
+            // visibility: Visibility::Hidden,
             ..default()
         },
-        PlayArea { marker: 4 },
-        Name::new("Play Area 4"),
+        PlayArea {
+            marker: 4,
+            player: 1,
+        },
+        Name::new("Play Area 4 - Player 4"),
     ));
 
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
-            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 4.0, 0.0, -0.4)),
-            visibility: Visibility::Hidden,
+            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 4.0, 0.0, 6.2)),
+            // visibility: Visibility::Hidden,
             ..default()
         },
-        PlayArea { marker: 5 },
-        Name::new("Play Area 5"),
+        PlayArea {
+            marker: 5,
+            player: 1,
+        },
+        Name::new("Play Area 5 - Player 5"),
+    ));
+
+    // ------------------------------
+
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
+            material: face_material.clone(),
+            transform: Transform::from_translation(Vec3::new(-7.6, 0.0, -6.2))
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+            // visibility: Visibility::Hidden,
+            ..default()
+        },
+        PlayArea {
+            marker: 1,
+            player: 1,
+        },
+        Name::new("Play Area 1 - Player 2"),
+    ));
+
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
+            material: face_material.clone(),
+            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05, 0.0, -6.2))
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+            // visibility: Visibility::Hidden,
+            ..default()
+        },
+        PlayArea {
+            marker: 2,
+            player: 1,
+        },
+        Name::new("Play Area 2 - Player 2"),
+    ));
+
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
+            material: face_material.clone(),
+            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 2.0, 0.0, -6.2))
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+            // visibility: Visibility::Hidden,
+            ..default()
+        },
+        PlayArea {
+            marker: 3,
+            player: 1,
+        },
+        Name::new("Play Area 3 - Player 2"),
+    ));
+
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
+            material: face_material.clone(),
+            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 3.0, 0.0, -6.2))
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+            // visibility: Visibility::Hidden,
+            ..default()
+        },
+        PlayArea {
+            marker: 4,
+            player: 1,
+        },
+        Name::new("Play Area 4 - Player 2"),
+    ));
+
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
+            material: face_material.clone(),
+            transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 4.0, 0.0, -6.2))
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+            // visibility: Visibility::Hidden,
+            ..default()
+        },
+        PlayArea {
+            marker: 5,
+            player: 1,
+        },
+        Name::new("Play Area 5 - Player 2"),
     ));
 
     ew_render_deck.send(RenderDeck);
@@ -249,7 +355,7 @@ pub fn handle_drop_chip(
             ChipType::Cocaine => Transform::from_xyz(1.8, 12.0, -3.6).with_scale(Vec3::ONE * 1.0),
         }
         .translation;
-        let mut final_translation = initial_translation.clone();
+        let mut final_translation = initial_translation;
         final_translation.y = num_chips_of_kind as f32 * 0.2;
 
         let tween: Tween<Transform> = Tween::new(
@@ -300,7 +406,7 @@ pub fn handle_move_chip_to_sales(
             .filter(|(_, _, area, chip)| area.marker == move_chip.area && chip.data == chip_type)
             .count();
 
-        let mut final_translation = initial_translation.clone();
+        let mut final_translation = initial_translation;
         final_translation.x = match chip_type {
             ChipType::Cannabis => 3.9,
             ChipType::Cocaine => 5.1,
@@ -335,10 +441,20 @@ pub fn render_hand_area(mut commands: Commands) {
     commands.spawn((
         Name::new("HandArea - Player 1"),
         TransformBundle {
-            local: Transform::from_translation(Vec3::new(0.0, 0.0, 5.8))
+            local: Transform::from_translation(Vec3::new(0.0, 3.5, 5.8))
                 .with_rotation(Quat::from_rotation_x(std::f32::consts::PI / 4.0)),
             ..default()
         },
         HandArea { player: 1 },
+    ));
+
+    commands.spawn((
+        Name::new("HandArea - Player 2"),
+        TransformBundle {
+            local: Transform::from_translation(Vec3::new(0.0, 3.5, -5.8))
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::PI / 4.0)),
+            ..default()
+        },
+        HandArea { player: 2 },
     ));
 }

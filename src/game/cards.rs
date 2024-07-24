@@ -1,6 +1,5 @@
-use bevy::ecs::query;
 use bevy::{app::App, prelude::*};
-use bevy_la_mesa::{events::CardPress, Card, CardMetadata, Deck, LaMesaPluginSettings};
+use bevy_la_mesa::{CardMetadata, LaMesaPluginSettings};
 
 use std::fmt::Debug;
 use std::marker::Send;
@@ -220,7 +219,7 @@ pub fn handle_next_phase(
 
 pub fn handle_drop_chip(
     mut er_drop_chip: EventReader<DropChip>,
-    mut game_state: ResMut<GameState>,
+    game_state: ResMut<GameState>,
     plugin_settings: Res<LaMesaPluginSettings<Kard>>,
 ) {
     for drop_chip in er_drop_chip.read() {
@@ -230,7 +229,7 @@ pub fn handle_drop_chip(
 
 pub fn handle_move_chip(
     mut er_drop_chip: EventReader<MoveChip>,
-    mut game_state: ResMut<GameState>,
+    game_state: ResMut<GameState>,
     plugin_settings: Res<LaMesaPluginSettings<Kard>>,
 ) {
     for move_chip in er_drop_chip.read() {
@@ -254,7 +253,8 @@ pub fn handle_switch_player(
             if game_state.player_number == 1 {
                 *transform = Transform::from_xyz(0.0, 12.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y);
             } else {
-                *transform = Transform::from_xyz(0.0, 12.0, -15.0).looking_at(Vec3::ZERO, Vec3::Y);
+                *transform = Transform::from_xyz(-3.0, 12.0, -15.0)
+                    .looking_at(Vec3::ZERO + Vec3::new(-3.0, 0.0, 0.0), Vec3::Y);
             }
         }
     }
