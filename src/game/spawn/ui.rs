@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 use bevy_la_mesa::events::{CardPress, PlaceCardOnTable};
-use bevy_la_mesa::{Card, CardOnTable, Hand, PlayArea};
+use bevy_la_mesa::{Card, CardOnTable, Hand};
 
 use crate::game::cards::Kard;
 use crate::screen::Screen;
@@ -23,6 +23,7 @@ pub enum CardGameUIAction {
     LabelTurnNumber,
     LabelTurnPhase,
     LabelPhaseDescription,
+    LabelBank,
 }
 
 pub(super) fn plugin(app: &mut App) {
@@ -66,6 +67,9 @@ fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
             children
                 .label("Phase Description")
                 .insert(CardGameUIAction::LabelPhaseDescription);
+            children
+                .label("Bank: $0")
+                .insert(CardGameUIAction::LabelBank);
             children
                 .button("Switch Player")
                 .insert(CardGameUIAction::ButtonSwitchPlayer);

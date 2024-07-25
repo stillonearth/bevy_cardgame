@@ -146,6 +146,9 @@ fn handle_labels(
                     text.sections[0].value = format!("Player number: {}", state.player)
                 }
                 CardGameUIAction::ButtonSwitchPlayer => {}
+                CardGameUIAction::LabelBank => {
+                    text.sections[0].value = format!("Bank: ${}", state.get_balance(state.player));
+                }
             }
         }
     }

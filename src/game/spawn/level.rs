@@ -4,23 +4,22 @@ use bevy::prelude::*;
 use bevy_la_mesa::{events::RenderDeck, Chip, ChipArea, DeckArea, HandArea, PlayArea};
 use bevy_tweening::{lens::TransformPositionLens, Animator, EaseFunction, Tween};
 
-use crate::game::cards::{ChipType, DropChip, MoveChip};
+use crate::game::cards::{ChipType, DiscardChip, DropChip, MoveChip};
 
 pub(super) fn plugin(app: &mut App) {
     app.observe(spawn_level);
     app.observe(spawn_board);
-    app.add_systems(Update, (handle_drop_chip, handle_move_chip_to_sales))
-        .add_systems(Startup, render_hand_area);
+    app.add_systems(
+        Update,
+        (handle_drop_chip, handle_move_chip_to_sales, discard_chip),
+    )
+    .add_systems(Startup, render_hand_area);
 }
 
 #[derive(Event, Debug)]
 pub struct SpawnLevel;
 
-fn spawn_level(_trigger: Trigger<SpawnLevel>, commands: Commands) {
-    // The only thing we have in our level is a player,
-    // but add things like walls etc. here.
-    // commands.trigger(SpawnPlayer);
-}
+fn spawn_level(_trigger: Trigger<SpawnLevel>, _commands: Commands) {}
 
 #[derive(Event, Debug)]
 pub struct SpawnBoard;
@@ -116,7 +115,7 @@ fn spawn_board(
         Name::new("Resources - Production - Player 2"),
     ));
 
-    // // Resources - Sales
+    // Resources - Sales
     let face_texture = asset_server.load("tarjetas/resources-production.png");
     let face_material = materials.add(StandardMaterial {
         base_color_texture: Some(face_texture.clone()),
@@ -151,7 +150,8 @@ fn spawn_board(
                     .subdivisions(10),
             ),
             material: face_material.clone(),
-            transform: Transform::from_translation(Vec3::new(4.5, 0.0, -(3.5 * 1.2 / 2.0 + 0.1))),
+            transform: Transform::from_translation(Vec3::new(4.5, 0.0, -(3.5 * 1.2 / 2.0 + 0.1)))
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
             ..default()
         },
         ResourceArea {
@@ -175,7 +175,7 @@ fn spawn_board(
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6, 0.0, 6.2)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -190,7 +190,7 @@ fn spawn_board(
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6 + 3.05, 0.0, 6.2)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -205,7 +205,7 @@ fn spawn_board(
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 2.0, 0.0, 6.2)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -220,7 +220,7 @@ fn spawn_board(
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 3.0, 0.0, 6.2)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -235,7 +235,7 @@ fn spawn_board(
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 4.0, 0.0, 6.2)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -253,7 +253,7 @@ fn spawn_board(
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6, 0.0, -6.2))
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -269,7 +269,7 @@ fn spawn_board(
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6 + 3.05, 0.0, -6.2))
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -285,7 +285,7 @@ fn spawn_board(
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 2.0, 0.0, -6.2))
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -301,7 +301,7 @@ fn spawn_board(
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 3.0, 0.0, -6.2))
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -317,7 +317,7 @@ fn spawn_board(
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-7.6 + 3.05 * 4.0, 0.0, -6.2))
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -336,7 +336,9 @@ pub fn handle_drop_chip(
     mut er_drop_chip: EventReader<DropChip>,
     query: Query<(Entity, &ChipArea, &Chip<ChipType>)>,
 ) {
-    for (i, drop_chip) in er_drop_chip.read().enumerate() {
+    let mut cocaine_counter = 0;
+    let mut cannabis_counter = 0;
+    for drop_chip in er_drop_chip.read() {
         let num_chips_of_kind = query
             .iter()
             .filter(|(_, area, chip)| {
@@ -355,15 +357,18 @@ pub fn handle_drop_chip(
         };
 
         let mut initial_translation = match drop_chip.chip_type {
-            ChipType::Cannabis => Transform::from_xyz(0.6, 12.0, -5.2).with_scale(Vec3::ONE * 1.0),
+            ChipType::Cannabis => Transform::from_xyz(0.6, 12.0, 1.5).with_scale(Vec3::ONE * 1.0),
             ChipType::Cocaine => Transform::from_xyz(1.8, 12.0, 3.3).with_scale(Vec3::ONE * 1.0),
         }
         .translation;
-        initial_translation.z =
-            initial_translation.z * if drop_chip.player == 1 { 1.0 } else { -1.0 };
+        initial_translation.z *= if drop_chip.player == 1 { 1.0 } else { -1.0 };
 
         let mut final_translation = initial_translation;
-        final_translation.y = (i + num_chips_of_kind) as f32 * 0.2;
+        final_translation.y = (match drop_chip.chip_type {
+            ChipType::Cannabis => cannabis_counter,
+            ChipType::Cocaine => cocaine_counter,
+        } + num_chips_of_kind) as f32
+            * 0.2;
 
         let tween: Tween<Transform> = Tween::new(
             EaseFunction::QuadraticIn,
@@ -397,6 +402,11 @@ pub fn handle_drop_chip(
             },
             Animator::new(tween),
         ));
+
+        match drop_chip.chip_type {
+            ChipType::Cannabis => cannabis_counter += 1,
+            ChipType::Cocaine => cocaine_counter += 1,
+        }
     }
 }
 
@@ -415,16 +425,7 @@ pub fn handle_move_chip_to_sales(
             .count();
 
         let mut final_translation = initial_translation;
-        final_translation.x = match chip_type {
-            ChipType::Cannabis => 1.5,
-            ChipType::Cocaine => 3.3,
-        } * if move_chip.player == 1 { 1.0 } else { -1.0 };
-
-        final_translation.z = match chip_type {
-            ChipType::Cannabis => -5.2,
-            ChipType::Cocaine => -3.6,
-        } * if move_chip.player == 1 { -1.0 } else { 1.0 };
-
+        final_translation.x += 3.3; //* if move_chip.player == 1 { 1.0 } else { -1.0 };
         final_translation.y = num_chips_of_kind as f32 * 0.2;
 
         let tween: Tween<Transform> = Tween::new(
@@ -446,6 +447,34 @@ pub fn handle_move_chip_to_sales(
     }
 }
 
+pub fn discard_chip(
+    mut commands: Commands,
+    mut er_discard_chip: EventReader<DiscardChip>,
+    query: Query<(Entity, &Transform, &Chip<ChipType>)>,
+) {
+    for discard_chip in er_discard_chip.read() {
+        let chip = query.get(discard_chip.entity).unwrap();
+        let initial_translation = chip.1.translation;
+
+        let mut final_translation = initial_translation;
+        final_translation.y = 120.0;
+
+        let tween: Tween<Transform> = Tween::new(
+            EaseFunction::QuadraticIn,
+            Duration::from_millis(350),
+            TransformPositionLens {
+                start: initial_translation,
+                end: final_translation,
+            },
+        );
+
+        commands
+            .entity(discard_chip.entity)
+            .insert(Animator::new(tween))
+            .remove::<ChipArea>();
+    }
+}
+
 pub fn render_hand_area(mut commands: Commands) {
     commands.spawn((
         Name::new("HandArea - Player 1"),
@@ -460,7 +489,7 @@ pub fn render_hand_area(mut commands: Commands) {
     commands.spawn((
         Name::new("HandArea - Player 2"),
         TransformBundle {
-            local: Transform::from_translation(Vec3::new(3.0, 3.5, -5.8)).with_rotation(
+            local: Transform::from_translation(Vec3::new(0.0, 3.5, -5.8)).with_rotation(
                 Quat::from_rotation_x(-std::f32::consts::PI / 4.0)
                     * Quat::from_rotation_y(std::f32::consts::PI),
             ),
