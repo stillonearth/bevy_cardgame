@@ -339,7 +339,11 @@ pub fn handle_drop_chip(
     for drop_chip in er_drop_chip.read() {
         let num_chips_of_kind = query
             .iter()
-            .filter(|(_, area, chip)| area.marker == 1 && chip.data == drop_chip.chip_type)
+            .filter(|(_, area, chip)| {
+                area.player == drop_chip.player
+                    && area.marker == 1
+                    && chip.data == drop_chip.chip_type
+            })
             .count();
 
         let model = match drop_chip.chip_type {
@@ -385,6 +389,7 @@ pub fn handle_drop_chip(
                 data: drop_chip.chip_type,
             },
             ChipArea {
+                player: drop_chip.player,
                 marker: drop_chip.area,
             },
             Animator::new(tween),

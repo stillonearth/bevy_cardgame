@@ -56,9 +56,9 @@ impl Plugin for AppPlugin {
 
         app.add_plugins((LaMesaPlugin::<Kard>::default(), ObjPlugin))
             .insert_resource(LaMesaPluginSettings::<Kard> {
-                num_players: 1,
+                num_players: 2,
                 back_card_path: "tarjetas/back.png".to_string(),
-                deck: load_deck(1),
+                deck: load_deck(2),
             });
 
         // Add other plugins.

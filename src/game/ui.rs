@@ -5,7 +5,7 @@ use bevy_la_mesa::{
 };
 
 use super::{
-    cards::{ChipType, DropChip, GameState, MoveChip, NextPhase, SwitchPlayer, TurnPhase},
+    cards::{AdvancePhase, ChipType, DropChip, GameState, MoveChip, SwitchPlayer, TurnPhase},
     spawn::ui::CardGameUIAction,
 };
 use crate::ui::prelude::InteractionQuery;
@@ -18,7 +18,7 @@ fn handle_gameplay_action(
     mut button_query: InteractionQuery<&CardGameUIAction>,
     mut ew_shuffle: EventWriter<DeckShuffle>,
     mut ew_draw: EventWriter<DrawHand>,
-    mut ew_next_phase: EventWriter<NextPhase>,
+    mut ew_advance_phase: EventWriter<AdvancePhase>,
     mut ew_drop_chip: EventWriter<DropChip>,
     mut ew_move_chip: EventWriter<MoveChip>,
     mut ew_switch_player: EventWriter<SwitchPlayer>,
@@ -42,12 +42,13 @@ fn handle_gameplay_action(
                         player: state.player,
                     };
                     ew_draw.send(event);
-                    // ew_next_phase.send(NextPhase);
+                    ew_advance_phase.send(AdvancePhase);
                 }
                 CardGameUIAction::ButtonDropChip => {
                     let event = DropChip {
                         chip_type: ChipType::Cannabis,
                         area: 1,
+                        player: state.player,
                     };
                     ew_drop_chip.send(event);
                 }
@@ -81,7 +82,9 @@ fn handle_gameplay_action(
                     };
                     ew_move_chip.send(event);
                 }
-                CardGameUIAction::ButtonAdvancePhase => {}
+                CardGameUIAction::ButtonAdvancePhase => {
+                    ew_advance_phase.send(AdvancePhase);
+                }
                 CardGameUIAction::ButtonSwitchPlayer => {
                     ew_switch_player.send(SwitchPlayer);
                 }
@@ -132,6 +135,7 @@ fn handle_labels(
                         }
                         TurnPhase::Event => "Draw a card from event deck and play it".to_string(),
                         TurnPhase::End => "Update your counters and pass turn".to_string(),
+                        TurnPhase::ApplyCards => "Applying card effects".to_string(),
                     };
                 }
                 CardGameUIAction::ButtonDropChip => {}

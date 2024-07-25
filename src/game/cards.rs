@@ -1,5 +1,7 @@
+use bevy::render::settings;
 use bevy::{app::App, prelude::*};
-use bevy_la_mesa::{CardMetadata, LaMesaPluginSettings};
+use bevy_la_mesa::events::PlaceCardOffTable;
+use bevy_la_mesa::{Card, CardMetadata, CardOnTable, LaMesaPluginSettings};
 
 use std::fmt::Debug;
 use std::marker::Send;
@@ -64,7 +66,7 @@ pub fn load_deck(num_players: usize) -> Vec<Kard> {
         filename: "tarjetas/drought.png".to_string(),
     };
 
-    let espinage = Kard {
+    let espionage = Kard {
         card_type: CardType::Espionage,
         filename: "tarjetas/espionage.png".to_string(),
     };
@@ -104,28 +106,30 @@ pub fn load_deck(num_players: usize) -> Vec<Kard> {
         deck.push(cocaine.clone());
         deck.push(cocaine.clone());
 
-        deck.push(marijuana.clone());
-        deck.push(marijuana.clone());
+        // deck.push(marijuana.clone());
+        // deck.push(marijuana.clone());
 
-        deck.push(truck.clone());
-        deck.push(truck.clone());
+        // deck.push(truck.clone());
+        // deck.push(truck.clone());
 
-        deck.push(train.clone());
+        // deck.push(train.clone());
 
-        deck.push(local_market.clone());
-        deck.push(local_market.clone());
+        // deck.push(local_market.clone());
+        // deck.push(local_market.clone());
 
-        deck.push(export.clone());
+        // deck.push(export.clone());
 
-        deck.push(espinage.clone());
+        // deck.push(espionage.clone());
 
-        deck.push(attack.clone());
+        // deck.push(attack.clone());
 
-        deck.push(police_bribe.clone());
+        // deck.push(police_bribe.clone());
 
-        deck.push(drought.clone());
+        // ---
 
-        deck.push(big_deal.clone());
+        // deck.push(drought.clone());
+
+        // deck.push(big_deal.clone());
     }
 
     deck
@@ -137,6 +141,7 @@ pub enum TurnPhase {
     #[default]
     Action,
     Event,
+    ApplyCards,
     End,
 }
 
@@ -151,8 +156,9 @@ impl GameState {
     pub fn advance(&mut self, num_players: usize) {
         self.phase = match self.phase {
             TurnPhase::Prepare => TurnPhase::Action,
-            TurnPhase::Action => TurnPhase::Event,
-            TurnPhase::Event => TurnPhase::End,
+            TurnPhase::Action => TurnPhase::ApplyCards,
+            // TurnPhase::Event => TurnPhase::End,
+            TurnPhase::ApplyCards => TurnPhase::End,
             TurnPhase::End => {
                 if self.player == num_players {
                     self.turn_number += 1;
@@ -162,6 +168,7 @@ impl GameState {
                 }
                 TurnPhase::Prepare
             }
+            _ => TurnPhase::End,
         }
     }
 }
@@ -169,7 +176,7 @@ impl GameState {
 // Events
 
 #[derive(Event)]
-pub struct NextPhase;
+pub struct AdvancePhase;
 
 #[derive(Event)]
 pub struct SwitchPlayer;
@@ -178,6 +185,7 @@ pub struct SwitchPlayer;
 pub struct DropChip {
     pub chip_type: ChipType,
     pub area: usize,
+    pub player: usize,
 }
 
 #[derive(Debug, Event)]
@@ -192,13 +200,14 @@ pub(super) fn plugin(app: &mut App) {
         phase: TurnPhase::Prepare,
         player: 1,
     })
-    .add_event::<NextPhase>()
+    .add_event::<AdvancePhase>()
     .add_event::<DropChip>()
     .add_event::<MoveChip>()
     .add_event::<SwitchPlayer>()
     .add_systems(
         Update,
         (
+            apply_card_effects,
             handle_next_phase,
             handle_drop_chip,
             handle_move_chip,
@@ -207,8 +216,44 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
+pub fn apply_card_effects(
+    mut state: ResMut<GameState>,
+    settings: Res<LaMesaPluginSettings<Kard>>,
+    cards_on_table: Query<(Entity, &Card<Kard>, &CardOnTable)>,
+    mut ew_place_card_off_table: EventWriter<PlaceCardOffTable>,
+) {
+    match state.phase {
+        TurnPhase::ApplyCards => {
+            println!("Applying card effects");
+
+            for (entity, card, card_on_table) in cards_on_table.iter() {
+                if card_on_table.player != state.player {
+                    continue;
+                }
+
+                match card.data.card_type {
+                    CardType::Cocaine => {
+                        println!("Cocaine card");
+                    }
+                    _ => {}
+                }
+
+                ew_place_card_off_table.send(PlaceCardOffTable {
+                    card_entity: entity,
+                    deck_marker: 1,
+                });
+
+                println!("Card: {:?}", card.data.card_type);
+            }
+
+            state.advance(settings.num_players);
+        }
+        _ => {}
+    }
+}
+
 pub fn handle_next_phase(
-    mut er_next_phase: EventReader<NextPhase>,
+    mut er_next_phase: EventReader<AdvancePhase>,
     mut game_state: ResMut<GameState>,
     plugin_settings: Res<LaMesaPluginSettings<Kard>>,
 ) {
