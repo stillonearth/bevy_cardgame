@@ -79,6 +79,7 @@ fn handle_gameplay_action(
                     let event = MoveChip {
                         entity: chip_entity,
                         area: 2,
+                        player: state.player,
                     };
                     ew_move_chip.send(event);
                 }

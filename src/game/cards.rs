@@ -192,6 +192,7 @@ pub struct DropChip {
 pub struct MoveChip {
     pub entity: Entity,
     pub area: usize,
+    pub player: usize,
 }
 
 pub(super) fn plugin(app: &mut App) {
@@ -221,6 +222,7 @@ pub fn apply_card_effects(
     settings: Res<LaMesaPluginSettings<Kard>>,
     cards_on_table: Query<(Entity, &Card<Kard>, &CardOnTable)>,
     mut ew_place_card_off_table: EventWriter<PlaceCardOffTable>,
+    mut ew_drop_chip: EventWriter<DropChip>,
 ) {
     match state.phase {
         TurnPhase::ApplyCards => {
@@ -233,7 +235,12 @@ pub fn apply_card_effects(
 
                 match card.data.card_type {
                     CardType::Cocaine => {
-                        println!("Cocaine card");
+                        let event = DropChip {
+                            chip_type: ChipType::Cocaine,
+                            area: 1,
+                            player: state.player,
+                        };
+                        ew_drop_chip.send(event);
                     }
                     _ => {}
                 }

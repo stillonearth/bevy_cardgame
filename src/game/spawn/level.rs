@@ -336,7 +336,7 @@ pub fn handle_drop_chip(
     mut er_drop_chip: EventReader<DropChip>,
     query: Query<(Entity, &ChipArea, &Chip<ChipType>)>,
 ) {
-    for drop_chip in er_drop_chip.read() {
+    for (i, drop_chip) in er_drop_chip.read().enumerate() {
         let num_chips_of_kind = query
             .iter()
             .filter(|(_, area, chip)| {
@@ -354,13 +354,16 @@ pub fn handle_drop_chip(
             }
         };
 
-        let initial_translation = match drop_chip.chip_type {
+        let mut initial_translation = match drop_chip.chip_type {
             ChipType::Cannabis => Transform::from_xyz(0.6, 12.0, -5.2).with_scale(Vec3::ONE * 1.0),
-            ChipType::Cocaine => Transform::from_xyz(1.8, 12.0, -3.6).with_scale(Vec3::ONE * 1.0),
+            ChipType::Cocaine => Transform::from_xyz(1.8, 12.0, 3.3).with_scale(Vec3::ONE * 1.0),
         }
         .translation;
+        initial_translation.z =
+            initial_translation.z * if drop_chip.player == 1 { 1.0 } else { -1.0 };
+
         let mut final_translation = initial_translation;
-        final_translation.y = num_chips_of_kind as f32 * 0.2;
+        final_translation.y = (i + num_chips_of_kind) as f32 * 0.2;
 
         let tween: Tween<Transform> = Tween::new(
             EaseFunction::QuadraticIn,
@@ -413,14 +416,14 @@ pub fn handle_move_chip_to_sales(
 
         let mut final_translation = initial_translation;
         final_translation.x = match chip_type {
-            ChipType::Cannabis => 3.9,
-            ChipType::Cocaine => 5.1,
-        };
+            ChipType::Cannabis => 1.5,
+            ChipType::Cocaine => 3.3,
+        } * if move_chip.player == 1 { 1.0 } else { -1.0 };
 
         final_translation.z = match chip_type {
             ChipType::Cannabis => -5.2,
             ChipType::Cocaine => -3.6,
-        };
+        } * if move_chip.player == 1 { -1.0 } else { 1.0 };
 
         final_translation.y = num_chips_of_kind as f32 * 0.2;
 
@@ -438,6 +441,7 @@ pub fn handle_move_chip_to_sales(
             .insert(Animator::new(tween))
             .insert(ChipArea {
                 marker: move_chip.area,
+                player: move_chip.player,
             });
     }
 }
@@ -456,7 +460,7 @@ pub fn render_hand_area(mut commands: Commands) {
     commands.spawn((
         Name::new("HandArea - Player 2"),
         TransformBundle {
-            local: Transform::from_translation(Vec3::new(0.0, 3.5, -5.8)).with_rotation(
+            local: Transform::from_translation(Vec3::new(3.0, 3.5, -5.8)).with_rotation(
                 Quat::from_rotation_x(-std::f32::consts::PI / 4.0)
                     * Quat::from_rotation_y(std::f32::consts::PI),
             ),
