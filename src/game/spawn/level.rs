@@ -395,6 +395,7 @@ pub fn handle_drop_chip(
             Name::new("Chip"),
             Chip::<ChipType> {
                 data: drop_chip.chip_type,
+                turn_activation: 0,
             },
             ChipArea {
                 player: drop_chip.player,

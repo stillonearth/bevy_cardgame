@@ -1,3 +1,4 @@
+use bevy::state::state;
 use bevy::{app::App, prelude::*};
 use bevy_la_mesa::events::{AlignCardsInHand, PlaceCardOffTable};
 use bevy_la_mesa::{Card, CardMetadata, CardOnTable, Chip, ChipArea, LaMesaPluginSettings};
@@ -161,6 +162,7 @@ impl GameState {
             // TurnPhase::Event => TurnPhase::End,
             TurnPhase::ApplyCards => TurnPhase::End,
             TurnPhase::End => {
+                println!("player: {}, num_players: {}", self.player, self.num_players);
                 if self.player == self.num_players {
                     self.turn_number += 1;
                     // self.player = 1;
@@ -231,7 +233,7 @@ pub struct DiscardChip {
 }
 
 pub(super) fn plugin(app: &mut App) {
-    app.insert_resource(GameState::new(2))
+    app.insert_resource(GameState::new(1))
         .add_event::<AdvancePhase>()
         .add_event::<DropChip>()
         .add_event::<MoveChip>()
@@ -340,6 +342,8 @@ pub fn apply_card_effects(
                         }
                     }
 
+                    entities_to_move.reverse();
+
                     for entity in entities_to_move {
                         if chip_value <= 0 {
                             break;
@@ -362,6 +366,8 @@ pub fn apply_card_effects(
                             chip.data == ChipType::Cannabis
                                 && area.marker == 2
                                 && area.player == player
+                                && chip.turn_activation < state.turn_number
+                                && chip.turn_activation != 0
                         })
                         .collect::<Vec<_>>();
                     cannabis_chips_on_table.sort_by(|(_, t1, _, _), (_, t2, _, _)| {
@@ -374,6 +380,8 @@ pub fn apply_card_effects(
                             chip.data == ChipType::Cocaine
                                 && area.marker == 2
                                 && area.player == player
+                                && chip.turn_activation < state.turn_number
+                                && chip.turn_activation != 0
                         })
                         .collect::<Vec<_>>();
 
@@ -466,9 +474,16 @@ pub fn handle_drop_chip(mut er_drop_chip: EventReader<DropChip>) {
     }
 }
 
-pub fn handle_move_chip(mut er_drop_chip: EventReader<MoveChip>) {
+pub fn handle_move_chip(
+    mut er_drop_chip: EventReader<MoveChip>,
+    mut query: Query<(Entity, &mut Chip<ChipType>)>,
+    state: Res<GameState>,
+) {
     for move_chip in er_drop_chip.read() {
-        println!("Moving chip: {:?}", move_chip);
+        let (_, mut chip) = query.get_mut(move_chip.entity).unwrap();
+
+        chip.turn_activation = state.turn_number;
+        println!("Moving chip: {}", chip.turn_activation);
     }
 }
 
