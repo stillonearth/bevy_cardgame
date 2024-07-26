@@ -13,7 +13,7 @@ use bevy::{
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_la_mesa::{LaMesaPlugin, LaMesaPluginSettings};
 use bevy_obj::ObjPlugin;
-use game::cards::{load_deck, ChipType, Kard};
+use game::cards::{load_playing_deck, ChipType, Kard};
 
 pub struct AppPlugin;
 
@@ -55,11 +55,10 @@ impl Plugin for AppPlugin {
         );
 
         app.add_plugins((LaMesaPlugin::<Kard, ChipType>::default(), ObjPlugin))
-            .insert_resource(LaMesaPluginSettings::<Kard> {
+            .insert_resource(LaMesaPluginSettings {
                 num_players: 2,
                 hand_size: 5,
                 back_card_path: "tarjetas/back.png".to_string(),
-                deck: load_deck(2),
             });
 
         // Add other plugins.

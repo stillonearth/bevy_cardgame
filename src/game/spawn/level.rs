@@ -1,10 +1,14 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use bevy_la_mesa::{events::RenderDeck, Chip, ChipArea, DeckArea, HandArea, PlayArea};
+use bevy_la_mesa::{
+    events::RenderDeck, Chip, ChipArea, DeckArea, HandArea, LaMesaPluginSettings, PlayArea,
+};
 use bevy_tweening::{lens::TransformPositionLens, Animator, EaseFunction, Tween};
 
-use crate::game::cards::{ChipType, DiscardChip, DropChip, GameState, MoveChip};
+use crate::game::cards::{
+    load_event_deck, load_playing_deck, ChipType, DiscardChip, DropChip, GameState, Kard, MoveChip,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.observe(spawn_level);
@@ -33,10 +37,11 @@ pub struct ResourceArea {
 fn spawn_board(
     _trigger: Trigger<SpawnBoard>,
     mut commands: Commands,
-    mut ew_render_deck: EventWriter<RenderDeck>,
+    mut ew_render_deck: EventWriter<RenderDeck<Kard>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     asset_server: Res<AssetServer>,
+    plugin_settings: Res<LaMesaPluginSettings>,
 ) {
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -56,7 +61,7 @@ fn spawn_board(
         ..default()
     });
 
-    // Deck Area
+    // Deck Area - Play Cards
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
@@ -66,7 +71,20 @@ fn spawn_board(
             ..default()
         },
         DeckArea { marker: 1 },
-        Name::new("Deck"),
+        Name::new("Deck 1 -- Play Cards"),
+    ));
+
+    // Deck Area - Play Cards
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
+            material: materials.add(Color::WHITE),
+            transform: Transform::from_translation(Vec3::new(-7.6 + 3.7, 0.0, 0.0))
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI / 2.0)),
+            ..default()
+        },
+        DeckArea { marker: 2 },
+        Name::new("Deck 2 - Event Cards"),
     ));
 
     // Resources - Production
@@ -327,7 +345,15 @@ fn spawn_board(
         Name::new("Play Area 5 - Player 2"),
     ));
 
-    ew_render_deck.send(RenderDeck);
+    ew_render_deck.send(RenderDeck::<Kard> {
+        marker: 1,
+        deck: load_playing_deck(plugin_settings.num_players),
+    });
+
+    ew_render_deck.send(RenderDeck::<Kard> {
+        marker: 2,
+        deck: load_event_deck(plugin_settings.num_players),
+    });
 }
 
 pub fn handle_drop_chip(

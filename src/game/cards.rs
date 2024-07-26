@@ -47,7 +47,7 @@ impl CardMetadata for Kard {
     }
 }
 
-pub fn load_deck(num_players: usize) -> Vec<Kard> {
+pub fn load_playing_deck(num_players: usize) -> Vec<Kard> {
     let attack = Kard {
         card_type: CardType::Attack,
         filename: "tarjetas/attack.png".to_string(),
@@ -126,12 +126,26 @@ pub fn load_deck(num_players: usize) -> Vec<Kard> {
         // deck.push(attack.clone());
 
         // deck.push(police_bribe.clone());
+    }
 
-        // ---
+    deck
+}
 
-        // deck.push(drought.clone());
+pub fn load_event_deck(num_players: usize) -> Vec<Kard> {
+    let big_deal = Kard {
+        card_type: CardType::BigDeal,
+        filename: "tarjetas/big-deal.png".to_string(),
+    };
 
-        // deck.push(big_deal.clone());
+    let drought = Kard {
+        card_type: CardType::Drought,
+        filename: "tarjetas/drought.png".to_string(),
+    };
+
+    let mut deck: Vec<Kard> = vec![];
+    for _ in 0..num_players {
+        deck.push(drought.clone());
+        deck.push(big_deal.clone());
     }
 
     deck

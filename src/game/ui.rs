@@ -32,12 +32,12 @@ fn handle_gameplay_action(
         if matches!(interaction, Interaction::Pressed) {
             match action {
                 CardGameUIAction::ButtonShuffleDeck => {
-                    let event = DeckShuffle { deck_entity };
+                    let event = DeckShuffle { deck_marker: 1 };
                     ew_shuffle.send(event);
                 }
                 CardGameUIAction::ButtonDrawHand => {
                     let event = DrawHand {
-                        deck_entity,
+                        deck_marker: 1,
                         num_cards: 5,
                         player: state.player,
                     };
