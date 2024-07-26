@@ -186,7 +186,37 @@ fn spawn_board(
         ..Default::default()
     });
 
-    // ------------------------------
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
+            material: face_material.clone(),
+            transform: Transform::from_translation(Vec3::new(-3.9, 0.0, 2.8))
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI / 2.0)),
+            // visibility: Visibility::Hidden,
+            ..default()
+        },
+        PlayArea {
+            marker: 6,
+            player: 1,
+        },
+        Name::new("Event Card - Player 1"),
+    ));
+
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(2.5, 3.5).subdivisions(10)),
+            material: face_material.clone(),
+            transform: Transform::from_translation(Vec3::new(-3.9, 0.0, -2.8))
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI / 2.0)),
+            // visibility: Visibility::Hidden,
+            ..default()
+        },
+        PlayArea {
+            marker: 6,
+            player: 2,
+        },
+        Name::new("Event Card - Player 1"),
+    ));
 
     commands.spawn((
         PbrBundle {
@@ -447,7 +477,7 @@ pub fn handle_move_chip_to_sales(
 ) {
     let mut n_cocaine_chips_moved = 0;
     let mut n_cannabis_chips_moved = 0;
-    for (i, move_chip) in er_move_chip.read().enumerate() {
+    for (_i, move_chip) in er_move_chip.read().enumerate() {
         let chip = query.get(move_chip.entity).unwrap();
         let chip_type = chip.3.data;
         let initial_translation = chip.1.translation;

@@ -1,6 +1,8 @@
 use bevy::{app::App, prelude::*};
-use bevy_la_mesa::events::{AlignCardsInHand, AlignChipsOnTable, PlaceCardOffTable};
-use bevy_la_mesa::{Card, CardMetadata, CardOnTable, Chip, ChipArea, LaMesaPluginSettings};
+use bevy_la_mesa::events::{
+    AlignCardsInHand, AlignChipsOnTable, PlaceCardOffTable, PlaceCardOnTable,
+};
+use bevy_la_mesa::{Card, CardMetadata, CardOnTable, Chip, ChipArea, Deck};
 
 use std::fmt::Debug;
 use std::marker::Send;
@@ -11,7 +13,7 @@ use crate::GameCamera;
 pub struct PhaseTimer(pub Timer);
 
 #[derive(Clone, Copy, Debug, Default)]
-enum CardType {
+pub enum CardType {
     Attack,
     BigDeal,
     #[default]
@@ -24,6 +26,11 @@ enum CardType {
     PoliceBribe,
     Train,
     Truck,
+}
+
+#[derive(Component)]
+pub struct ActiveEventCard {
+    pub player: usize,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -48,14 +55,9 @@ impl CardMetadata for Kard {
 }
 
 pub fn load_playing_deck(num_players: usize) -> Vec<Kard> {
-    let attack = Kard {
+    let _attack = Kard {
         card_type: CardType::Attack,
         filename: "tarjetas/attack.png".to_string(),
-    };
-
-    let big_deal = Kard {
-        card_type: CardType::BigDeal,
-        filename: "tarjetas/big-deal.png".to_string(),
     };
 
     let cocaine = Kard {
@@ -63,12 +65,7 @@ pub fn load_playing_deck(num_players: usize) -> Vec<Kard> {
         filename: "tarjetas/cocaine.png".to_string(),
     };
 
-    let drought = Kard {
-        card_type: CardType::Drought,
-        filename: "tarjetas/drought.png".to_string(),
-    };
-
-    let espionage = Kard {
+    let _espionage = Kard {
         card_type: CardType::Espionage,
         filename: "tarjetas/espionage.png".to_string(),
     };
@@ -88,7 +85,7 @@ pub fn load_playing_deck(num_players: usize) -> Vec<Kard> {
         filename: "tarjetas/marijuana.png".to_string(),
     };
 
-    let police_bribe = Kard {
+    let _police_bribe = Kard {
         card_type: CardType::PoliceBribe,
         filename: "tarjetas/police-bribe.png".to_string(),
     };
@@ -153,10 +150,11 @@ pub fn load_event_deck(num_players: usize) -> Vec<Kard> {
 
 #[derive(Default, Debug, PartialEq)]
 pub enum TurnPhase {
-    Prepare,
     #[default]
+    Prepare,
     PlaceCardsOnTable,
-    Event,
+    DrawEventCard,
+    ApplyEventCard,
     ApplyProductionCards,
     ApplyTransportationCards,
     ApplySalesCards,
@@ -176,7 +174,8 @@ impl GameState {
     pub fn advance(&mut self) {
         self.phase = match self.phase {
             TurnPhase::Prepare => TurnPhase::PlaceCardsOnTable,
-            TurnPhase::PlaceCardsOnTable => TurnPhase::ApplyProductionCards,
+            TurnPhase::PlaceCardsOnTable => TurnPhase::DrawEventCard,
+            TurnPhase::DrawEventCard => TurnPhase::ApplyProductionCards,
             TurnPhase::ApplyProductionCards => TurnPhase::ApplyTransportationCards,
             TurnPhase::ApplyTransportationCards => TurnPhase::ApplySalesCards,
             TurnPhase::ApplySalesCards => TurnPhase::End,
@@ -276,10 +275,14 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 pub fn apply_card_effects(
+    mut commands: Commands,
     mut state: ResMut<GameState>,
     cards_on_table: Query<(Entity, &Card<Kard>, &CardOnTable)>,
+    cards_in_deck: Query<(Entity, &Transform, &Card<Kard>, &Deck)>,
     chips_on_table: Query<(Entity, &Transform, &Chip<ChipType>, &ChipArea)>,
+    event_cards_on_table: Query<(Entity, &ActiveEventCard)>,
     mut ew_place_card_off_table: EventWriter<PlaceCardOffTable>,
+    mut ew_place_card_on_table: EventWriter<PlaceCardOnTable>,
     mut ew_drop_chip: EventWriter<DropChip>,
     mut ew_move_chip: EventWriter<MoveChip>,
     mut ew_discard_chip: EventWriter<DiscardChip>,
@@ -287,6 +290,7 @@ pub fn apply_card_effects(
 ) {
     let player = state.player;
 
+    // Apply Cards in Play Area
     for (entity, card, _) in cards_on_table
         .iter()
         .filter(|(_, _, card_on_table)| card_on_table.player == player)
@@ -297,7 +301,7 @@ pub fn apply_card_effects(
                     let event = DropChip {
                         chip_type: ChipType::Cocaine,
                         area: 1,
-                        player: player,
+                        player,
                     };
                     ew_drop_chip.send(event);
 
@@ -310,7 +314,7 @@ pub fn apply_card_effects(
                     let event = DropChip {
                         chip_type: ChipType::Cannabis,
                         area: 1,
-                        player: player,
+                        player,
                     };
                     ew_drop_chip.send(event);
 
@@ -388,7 +392,7 @@ pub fn apply_card_effects(
                         let event = MoveChip {
                             entity,
                             area: 2,
-                            player: player,
+                            player,
                         };
                         ew_move_chip.send(event);
                         chip_value -= 10;
@@ -486,10 +490,54 @@ pub fn apply_card_effects(
         }
     }
 
+    // Apply Effect Cards
+    match state.phase {
+        TurnPhase::DrawEventCard => {
+            let n_event_cards_from = event_cards_on_table
+                .iter()
+                .filter(|(_, active_event_card)| active_event_card.player == player)
+                .count();
+
+            if n_event_cards_from == 0 {
+                let mut event_cards = cards_in_deck
+                    .iter()
+                    .filter(|(_, _, _, deck)| deck.marker == 2)
+                    .collect::<Vec<_>>();
+                event_cards.sort_by(|(_, t1, _, _), (_, t2, _, _)| {
+                    t2.translation.z.partial_cmp(&t1.translation.z).unwrap()
+                });
+                let entity = event_cards[0].0;
+                commands
+                    .entity(entity)
+                    .insert(ActiveEventCard { player })
+                    .remove::<Deck>();
+                ew_place_card_on_table.send(PlaceCardOnTable {
+                    card_entity: event_cards[0].0,
+                    marker: 6,
+                    player,
+                });
+            }
+        }
+        TurnPhase::End => {
+            if state.player == state.num_players {
+                for (entity, _) in event_cards_on_table.iter() {
+                    commands.entity(entity).remove::<ActiveEventCard>();
+                    ew_place_card_off_table.send(PlaceCardOffTable {
+                        card_entity: entity,
+                        deck_marker: 2,
+                    });
+                }
+            }
+        }
+        _ => {}
+    }
+
     match state.phase {
         TurnPhase::ApplyProductionCards
         | TurnPhase::ApplyTransportationCards
         | TurnPhase::ApplySalesCards
+        | TurnPhase::DrawEventCard
+        | TurnPhase::ApplyEventCard
         | TurnPhase::End => {
             ew_advance_phase.send(AdvancePhase);
         }
@@ -516,11 +564,13 @@ pub fn handle_next_phase(
         }
 
         match game_state.phase {
-            TurnPhase::End => {
+            TurnPhase::PlaceCardsOnTable => {
                 ew_align_cards_in_hand.send(AlignCardsInHand {
                     player: game_state.player,
                 });
+            }
 
+            TurnPhase::End => {
                 ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
                     chip_area: ChipArea {
                         marker: 1,
@@ -595,7 +645,7 @@ pub fn handle_next_phase(
 }
 
 pub fn handle_drop_chip(mut er_drop_chip: EventReader<DropChip>) {
-    for drop_chip in er_drop_chip.read() {
+    for _drop_chip in er_drop_chip.read() {
         // println!("Dropping chip: {:?}", drop_chip.chip_type);
     }
 }

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_la_mesa::{
     events::{DeckShuffle, DrawHand},
-    Chip, ChipArea, DeckArea,
+    Chip, ChipArea,
 };
 
 use super::{
@@ -22,18 +22,15 @@ fn handle_gameplay_action(
     mut ew_drop_chip: EventWriter<DropChip>,
     mut ew_move_chip: EventWriter<MoveChip>,
     mut ew_switch_player: EventWriter<SwitchPlayer>,
-    decks: Query<(Entity, &DeckArea)>,
     chips: Query<(Entity, &Transform, &Chip<ChipType>, &ChipArea)>,
     state: Res<GameState>,
 ) {
     for (interaction, action) in &mut button_query {
-        let deck_entity = decks.iter().next().unwrap().0;
-
         if matches!(interaction, Interaction::Pressed) {
             match action {
                 CardGameUIAction::ButtonShuffleDeck => {
-                    let event = DeckShuffle { deck_marker: 1 };
-                    ew_shuffle.send(event);
+                    ew_shuffle.send(DeckShuffle { deck_marker: 1 });
+                    ew_shuffle.send(DeckShuffle { deck_marker: 2 });
                 }
                 CardGameUIAction::ButtonDrawHand => {
                     let event = DrawHand {
@@ -140,7 +137,8 @@ fn handle_labels(
                         TurnPhase::PlaceCardsOnTable => {
                             "You may play cards from your hand or draw".to_string()
                         }
-                        TurnPhase::Event => "Draw a card from event deck and play it".to_string(),
+                        TurnPhase::DrawEventCard => "Drawing event card".to_string(),
+                        TurnPhase::ApplyEventCard => "Applying event card effects".to_string(),
                         TurnPhase::End => "Update your counters and pass turn".to_string(),
                         TurnPhase::ApplyProductionCards => "Applying Production Cards".to_string(),
                         TurnPhase::ApplyTransportationCards => {

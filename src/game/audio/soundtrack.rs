@@ -1,4 +1,7 @@
-use bevy::{audio::PlaybackMode, prelude::*};
+use bevy::{
+    audio::{PlaybackMode, Volume},
+    prelude::*,
+};
 
 use crate::game::assets::{HandleMap, SoundtrackKey};
 
@@ -9,11 +12,10 @@ pub(super) fn plugin(app: &mut App) {
 
 fn play_soundtrack(
     trigger: Trigger<PlaySoundtrack>,
-    commands: Commands,
+    mut commands: Commands,
     soundtrack_handles: Res<HandleMap<SoundtrackKey>>,
     soundtrack_query: Query<Entity, With<IsSoundtrack>>,
 ) {
-    return;
     for entity in &soundtrack_query {
         commands.entity(entity).despawn_recursive();
     }
@@ -27,6 +29,7 @@ fn play_soundtrack(
             source: soundtrack_handles[&soundtrack_key].clone_weak(),
             settings: PlaybackSettings {
                 mode: PlaybackMode::Loop,
+                volume: Volume::new(0.1),
                 ..default()
             },
         },

@@ -13,7 +13,7 @@ use bevy::{
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_la_mesa::{LaMesaPlugin, LaMesaPluginSettings};
 use bevy_obj::ObjPlugin;
-use game::cards::{load_playing_deck, ChipType, Kard};
+use game::cards::{ChipType, Kard};
 
 pub struct AppPlugin;
 

@@ -110,9 +110,14 @@ pub fn handle_card_press(
             .map(|(_, _, t)| t.marker)
             .collect();
 
+        let marker = markers.iter().max().unwrap_or(&0) + 1;
+        if marker > 5 {
+            continue;
+        }
+
         ew_place_card_on_table.send(PlaceCardOnTable {
             card_entity: event.card_entity,
-            marker: markers.iter().max().unwrap_or(&0) + 1,
+            marker,
             player: hand.player,
         });
     }
