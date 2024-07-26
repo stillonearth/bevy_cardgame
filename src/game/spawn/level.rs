@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_la_mesa::{events::RenderDeck, Chip, ChipArea, DeckArea, HandArea, PlayArea};
 use bevy_tweening::{lens::TransformPositionLens, Animator, EaseFunction, Tween};
 
-use crate::game::cards::{ChipType, DiscardChip, DropChip, MoveChip};
+use crate::game::cards::{ChipType, DiscardChip, DropChip, GameState, MoveChip};
 
 pub(super) fn plugin(app: &mut App) {
     app.observe(spawn_level);
@@ -335,6 +335,7 @@ pub fn handle_drop_chip(
     mut commands: Commands,
     mut er_drop_chip: EventReader<DropChip>,
     query: Query<(Entity, &ChipArea, &Chip<ChipType>)>,
+    game_state: Res<GameState>,
 ) {
     let mut cocaine_counter = 0;
     let mut cannabis_counter = 0;
@@ -396,7 +397,8 @@ pub fn handle_drop_chip(
             Name::new("Chip"),
             Chip::<ChipType> {
                 data: drop_chip.chip_type,
-                turn_activation: 0,
+                turn_activation_1: game_state.turn_number,
+                turn_activation_2: 0,
             },
             ChipArea {
                 player: drop_chip.player,
@@ -417,7 +419,9 @@ pub fn handle_move_chip_to_sales(
     mut er_move_chip: EventReader<MoveChip>,
     query: Query<(Entity, &Transform, &ChipArea, &Chip<ChipType>)>,
 ) {
-    for move_chip in er_move_chip.read() {
+    let mut n_cocaine_chips_moved = 0;
+    let mut n_cannabis_chips_moved = 0;
+    for (i, move_chip) in er_move_chip.read().enumerate() {
         let chip = query.get(move_chip.entity).unwrap();
         let chip_type = chip.3.data;
         let initial_translation = chip.1.translation;
@@ -427,8 +431,14 @@ pub fn handle_move_chip_to_sales(
             .count();
 
         let mut final_translation = initial_translation;
-        final_translation.x += 3.3; //* if move_chip.player == 1 { 1.0 } else { -1.0 };
-        final_translation.y = 0.1 + num_chips_of_kind as f32 * 0.2;
+        final_translation.x += 3.3;
+        final_translation.y = 0.1
+            + (num_chips_of_kind
+                + match chip_type {
+                    ChipType::Cannabis => n_cannabis_chips_moved,
+                    ChipType::Cocaine => n_cocaine_chips_moved,
+                }) as f32
+                * 0.2;
 
         let tween: Tween<Transform> = Tween::new(
             EaseFunction::QuadraticIn,
@@ -446,6 +456,11 @@ pub fn handle_move_chip_to_sales(
                 marker: move_chip.area,
                 player: move_chip.player,
             });
+
+        match chip_type {
+            ChipType::Cannabis => n_cannabis_chips_moved += 1,
+            ChipType::Cocaine => n_cocaine_chips_moved += 1,
+        }
     }
 }
 
@@ -455,6 +470,7 @@ pub fn discard_chip(
     query: Query<(Entity, &Transform, &Chip<ChipType>)>,
 ) {
     for discard_chip in er_discard_chip.read() {
+        // commands.entity(discard_chip.entity).despawn_recursive();
         let chip = query.get(discard_chip.entity).unwrap();
         let initial_translation = chip.1.translation;
 

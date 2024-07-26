@@ -131,12 +131,16 @@ fn handle_labels(
                         TurnPhase::Prepare => {
                             "You may shuffle the deck and draw 5 cards".to_string()
                         }
-                        TurnPhase::Action => {
+                        TurnPhase::PlaceCardsOnTable => {
                             "You may play cards from your hand or draw".to_string()
                         }
                         TurnPhase::Event => "Draw a card from event deck and play it".to_string(),
                         TurnPhase::End => "Update your counters and pass turn".to_string(),
-                        TurnPhase::ApplyCards => "Applying card effects".to_string(),
+                        TurnPhase::ApplyProductionCards => "Applying Production Cards".to_string(),
+                        TurnPhase::ApplyTransportationCards => {
+                            "Applying Transportation Cards".to_string()
+                        }
+                        TurnPhase::ApplySalesCards => "Applying Sales Cards".to_string(),
                     };
                 }
                 CardGameUIAction::ButtonDropChip => {}

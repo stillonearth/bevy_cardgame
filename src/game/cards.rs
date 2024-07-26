@@ -1,4 +1,3 @@
-use bevy::state::state;
 use bevy::{app::App, prelude::*};
 use bevy_la_mesa::events::{AlignCardsInHand, AlignChipsOnTable, PlaceCardOffTable};
 use bevy_la_mesa::{Card, CardMetadata, CardOnTable, Chip, ChipArea, LaMesaPluginSettings};
@@ -7,6 +6,9 @@ use std::fmt::Debug;
 use std::marker::Send;
 
 use crate::GameCamera;
+
+#[derive(Resource)]
+pub struct PhaseTimer(pub Timer);
 
 #[derive(Clone, Copy, Debug, Default)]
 enum CardType {
@@ -139,9 +141,11 @@ pub fn load_deck(num_players: usize) -> Vec<Kard> {
 pub enum TurnPhase {
     Prepare,
     #[default]
-    Action,
+    PlaceCardsOnTable,
     Event,
-    ApplyCards,
+    ApplyProductionCards,
+    ApplyTransportationCards,
+    ApplySalesCards,
     End,
 }
 
@@ -157,20 +161,24 @@ pub struct GameState {
 impl GameState {
     pub fn advance(&mut self) {
         self.phase = match self.phase {
-            TurnPhase::Prepare => TurnPhase::Action,
-            TurnPhase::Action => TurnPhase::ApplyCards,
-            // TurnPhase::Event => TurnPhase::End,
-            TurnPhase::ApplyCards => TurnPhase::End,
+            TurnPhase::Prepare => TurnPhase::PlaceCardsOnTable,
+            TurnPhase::PlaceCardsOnTable => TurnPhase::ApplyProductionCards,
+            TurnPhase::ApplyProductionCards => TurnPhase::ApplyTransportationCards,
+            TurnPhase::ApplyTransportationCards => TurnPhase::ApplySalesCards,
+            TurnPhase::ApplySalesCards => TurnPhase::End,
             TurnPhase::End => {
                 if self.player == self.num_players {
                     self.turn_number += 1;
-                    // self.player = 1;
+                    self.player = 1;
                 } else {
-                    // self.player += 1;
+                    self.player += 1;
                 }
                 TurnPhase::Prepare
             }
-            _ => TurnPhase::End,
+            _ => {
+                println!("Invalid phase: {:?}", self.phase);
+                TurnPhase::End
+            }
         }
     }
 
@@ -238,6 +246,7 @@ pub(super) fn plugin(app: &mut App) {
         .add_event::<MoveChip>()
         .add_event::<DiscardChip>()
         .add_event::<SwitchPlayer>()
+        .insert_resource(PhaseTimer(Timer::from_seconds(0.3, TimerMode::Once)))
         .add_systems(
             Update,
             (
@@ -258,17 +267,16 @@ pub fn apply_card_effects(
     mut ew_drop_chip: EventWriter<DropChip>,
     mut ew_move_chip: EventWriter<MoveChip>,
     mut ew_discard_chip: EventWriter<DiscardChip>,
+    mut ew_advance_phase: EventWriter<AdvancePhase>,
 ) {
-    if state.phase == TurnPhase::ApplyCards {
-        // println!("Applying card effects");
-        let player = state.player;
+    let player = state.player;
 
-        for (entity, card, card_on_table) in cards_on_table.iter() {
-            if card_on_table.player != player {
-                continue;
-            }
-
-            match card.data.card_type {
+    for (entity, card, _) in cards_on_table
+        .iter()
+        .filter(|(_, _, card_on_table)| card_on_table.player == player)
+    {
+        match state.phase {
+            TurnPhase::ApplyProductionCards => match card.data.card_type {
                 CardType::Cocaine => {
                     let event = DropChip {
                         chip_type: ChipType::Cocaine,
@@ -276,6 +284,11 @@ pub fn apply_card_effects(
                         player: player,
                     };
                     ew_drop_chip.send(event);
+
+                    ew_place_card_off_table.send(PlaceCardOffTable {
+                        card_entity: entity,
+                        deck_marker: 1,
+                    });
                 }
                 CardType::Cannabis => {
                     let event = DropChip {
@@ -284,7 +297,15 @@ pub fn apply_card_effects(
                         player: player,
                     };
                     ew_drop_chip.send(event);
+
+                    ew_place_card_off_table.send(PlaceCardOffTable {
+                        card_entity: entity,
+                        deck_marker: 1,
+                    });
                 }
+                _ => {}
+            },
+            TurnPhase::ApplyTransportationCards => match card.data.card_type {
                 CardType::Truck | CardType::Train => {
                     let mut cannabis_chips_on_table = chips_on_table
                         .iter()
@@ -292,6 +313,7 @@ pub fn apply_card_effects(
                             chip.data == ChipType::Cannabis
                                 && area.marker == 1
                                 && area.player == player
+                                && chip.turn_activation_1 < state.turn_number
                         })
                         .collect::<Vec<_>>();
                     cannabis_chips_on_table.sort_by(|(_, t1, _, _), (_, t2, _, _)| {
@@ -304,6 +326,7 @@ pub fn apply_card_effects(
                             chip.data == ChipType::Cocaine
                                 && area.marker == 1
                                 && area.player == player
+                                && chip.turn_activation_1 < state.turn_number
                         })
                         .collect::<Vec<_>>();
 
@@ -341,8 +364,6 @@ pub fn apply_card_effects(
                         }
                     }
 
-                    entities_to_move.reverse();
-
                     for entity in entities_to_move {
                         if chip_value <= 0 {
                             break;
@@ -354,10 +375,17 @@ pub fn apply_card_effects(
                             player: player,
                         };
                         ew_move_chip.send(event);
-
                         chip_value -= 10;
                     }
+
+                    ew_place_card_off_table.send(PlaceCardOffTable {
+                        card_entity: entity,
+                        deck_marker: 1,
+                    });
                 }
+                _ => {}
+            },
+            TurnPhase::ApplySalesCards => match card.data.card_type {
                 CardType::Export | CardType::LocalMarket => {
                     let mut cannabis_chips_on_table = chips_on_table
                         .iter()
@@ -365,12 +393,12 @@ pub fn apply_card_effects(
                             chip.data == ChipType::Cannabis
                                 && area.marker == 2
                                 && area.player == player
-                                && chip.turn_activation < state.turn_number
-                                && chip.turn_activation != 0
+                                && chip.turn_activation_2 < state.turn_number
+                                && chip.turn_activation_2 != 0
                         })
                         .collect::<Vec<_>>();
                     cannabis_chips_on_table.sort_by(|(_, t1, _, _), (_, t2, _, _)| {
-                        t1.translation.z.partial_cmp(&t2.translation.z).unwrap()
+                        t2.translation.z.partial_cmp(&t1.translation.z).unwrap()
                     });
 
                     let mut cocaine_chips_on_table = chips_on_table
@@ -379,19 +407,19 @@ pub fn apply_card_effects(
                             chip.data == ChipType::Cocaine
                                 && area.marker == 2
                                 && area.player == player
-                                && chip.turn_activation < state.turn_number
-                                && chip.turn_activation != 0
+                                && chip.turn_activation_2 < state.turn_number
+                                && chip.turn_activation_2 != 0
                         })
                         .collect::<Vec<_>>();
 
                     cocaine_chips_on_table.sort_by(|(_, t1, _, _), (_, t2, _, _)| {
-                        t1.translation.z.partial_cmp(&t2.translation.z).unwrap()
+                        t2.translation.z.partial_cmp(&t1.translation.z).unwrap()
                     });
 
                     let mut entities_to_discard: Vec<Entity> = vec![];
                     let mut chip_value = match card.data.card_type {
-                        CardType::Export => 10,
-                        CardType::LocalMarket => 50,
+                        CardType::Export => 50,
+                        CardType::LocalMarket => 10,
                         _ => 0,
                     };
 
@@ -430,21 +458,26 @@ pub fn apply_card_effects(
 
                         state.increase_bank(player, 100);
                     }
+
+                    ew_place_card_off_table.send(PlaceCardOffTable {
+                        card_entity: entity,
+                        deck_marker: 1,
+                    });
                 }
-                CardType::Attack => {}
-                CardType::BigDeal => {}
-                CardType::Drought => {}
-                CardType::Espionage => {}
-                CardType::PoliceBribe => {}
-            }
-
-            ew_place_card_off_table.send(PlaceCardOffTable {
-                card_entity: entity,
-                deck_marker: 1,
-            });
+                _ => {}
+            },
+            _ => {}
         }
+    }
 
-        state.advance();
+    match state.phase {
+        TurnPhase::ApplyProductionCards
+        | TurnPhase::ApplyTransportationCards
+        | TurnPhase::ApplySalesCards
+        | TurnPhase::End => {
+            ew_advance_phase.send(AdvancePhase);
+        }
+        _ => {}
     }
 }
 
@@ -453,75 +486,87 @@ pub fn handle_next_phase(
     mut ew_align_cards_in_hand: EventWriter<AlignCardsInHand>,
     mut ew_align_chips_on_table: EventWriter<AlignChipsOnTable<ChipType>>,
     mut game_state: ResMut<GameState>,
+    mut phase_timer: ResMut<PhaseTimer>,
+    time: Res<Time>,
 ) {
+    if !phase_timer.0.finished() {
+        phase_timer.0.tick(time.delta());
+    }
+
     for _ in er_next_phase.read() {
-        if game_state.phase == TurnPhase::End {
-            ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
-                chip_area: ChipArea {
-                    marker: 1,
-                    player: 1,
-                },
-                chip_type: ChipType::Cocaine,
-            });
-            ew_align_chips_on_table.send(AlignChipsOnTable {
-                chip_area: ChipArea {
-                    marker: 2,
-                    player: 1,
-                },
-                chip_type: ChipType::Cocaine,
-            });
-            ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
-                chip_area: ChipArea {
-                    marker: 1,
-                    player: 1,
-                },
-                chip_type: ChipType::Cannabis,
-            });
-            ew_align_chips_on_table.send(AlignChipsOnTable {
-                chip_area: ChipArea {
-                    marker: 2,
-                    player: 1,
-                },
-                chip_type: ChipType::Cannabis,
-            });
-            // ---
-            ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
-                chip_area: ChipArea {
-                    marker: 1,
-                    player: 2,
-                },
-                chip_type: ChipType::Cocaine,
-            });
-            ew_align_chips_on_table.send(AlignChipsOnTable {
-                chip_area: ChipArea {
-                    marker: 2,
-                    player: 2,
-                },
-                chip_type: ChipType::Cocaine,
-            });
-            ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
-                chip_area: ChipArea {
-                    marker: 1,
-                    player: 2,
-                },
-                chip_type: ChipType::Cannabis,
-            });
-            ew_align_chips_on_table.send(AlignChipsOnTable {
-                chip_area: ChipArea {
-                    marker: 2,
-                    player: 2,
-                },
-                chip_type: ChipType::Cannabis,
-            });
+        if !phase_timer.0.finished() {
+            continue;
+        }
+
+        match game_state.phase {
+            TurnPhase::End => {
+                ew_align_cards_in_hand.send(AlignCardsInHand {
+                    player: game_state.player,
+                });
+
+                ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
+                    chip_area: ChipArea {
+                        marker: 1,
+                        player: 1,
+                    },
+                    chip_type: ChipType::Cocaine,
+                });
+                ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
+                    chip_area: ChipArea {
+                        marker: 1,
+                        player: 1,
+                    },
+                    chip_type: ChipType::Cannabis,
+                });
+                ew_align_chips_on_table.send(AlignChipsOnTable {
+                    chip_area: ChipArea {
+                        marker: 2,
+                        player: 1,
+                    },
+                    chip_type: ChipType::Cocaine,
+                });
+                ew_align_chips_on_table.send(AlignChipsOnTable {
+                    chip_area: ChipArea {
+                        marker: 2,
+                        player: 1,
+                    },
+                    chip_type: ChipType::Cannabis,
+                });
+                // ---
+                ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
+                    chip_area: ChipArea {
+                        marker: 1,
+                        player: 2,
+                    },
+                    chip_type: ChipType::Cocaine,
+                });
+                ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
+                    chip_area: ChipArea {
+                        marker: 1,
+                        player: 2,
+                    },
+                    chip_type: ChipType::Cannabis,
+                });
+                ew_align_chips_on_table.send(AlignChipsOnTable {
+                    chip_area: ChipArea {
+                        marker: 2,
+                        player: 2,
+                    },
+                    chip_type: ChipType::Cocaine,
+                });
+                ew_align_chips_on_table.send(AlignChipsOnTable {
+                    chip_area: ChipArea {
+                        marker: 2,
+                        player: 2,
+                    },
+                    chip_type: ChipType::Cannabis,
+                });
+            }
+            _ => {}
         }
 
         game_state.advance();
-
-        if game_state.phase == TurnPhase::ApplyCards {
-            ew_align_cards_in_hand.send(AlignCardsInHand {
-                player: game_state.player,
-            });
-        }
+        phase_timer.0.reset();
     }
 }
 
@@ -539,8 +584,8 @@ pub fn handle_move_chip(
     for move_chip in er_drop_chip.read() {
         let (_, mut chip) = query.get_mut(move_chip.entity).unwrap();
 
-        chip.turn_activation = state.turn_number;
-        // println!("Moving chip: {}", chip.turn_activation);
+        chip.turn_activation_2 = state.turn_number;
+        // println!("Moving chip: {}", chip.turn_activation_2);
     }
 }
 
