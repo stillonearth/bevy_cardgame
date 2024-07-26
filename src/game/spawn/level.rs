@@ -364,11 +364,12 @@ pub fn handle_drop_chip(
         initial_translation.z *= if drop_chip.player == 1 { 1.0 } else { -1.0 };
 
         let mut final_translation = initial_translation;
-        final_translation.y = (match drop_chip.chip_type {
-            ChipType::Cannabis => cannabis_counter,
-            ChipType::Cocaine => cocaine_counter,
-        } + num_chips_of_kind) as f32
-            * 0.2;
+        final_translation.y = 0.1
+            + (match drop_chip.chip_type {
+                ChipType::Cannabis => cannabis_counter,
+                ChipType::Cocaine => cocaine_counter,
+            } + num_chips_of_kind) as f32
+                * 0.2;
 
         let tween: Tween<Transform> = Tween::new(
             EaseFunction::QuadraticIn,
@@ -427,7 +428,7 @@ pub fn handle_move_chip_to_sales(
 
         let mut final_translation = initial_translation;
         final_translation.x += 3.3; //* if move_chip.player == 1 { 1.0 } else { -1.0 };
-        final_translation.y = num_chips_of_kind as f32 * 0.2;
+        final_translation.y = 0.1 + num_chips_of_kind as f32 * 0.2;
 
         let tween: Tween<Transform> = Tween::new(
             EaseFunction::QuadraticIn,

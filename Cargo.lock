@@ -851,7 +851,7 @@ dependencies = [
 
 [[package]]
 name = "bevy_la_mesa"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",

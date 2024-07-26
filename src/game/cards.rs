@@ -1,6 +1,6 @@
 use bevy::state::state;
 use bevy::{app::App, prelude::*};
-use bevy_la_mesa::events::{AlignCardsInHand, PlaceCardOffTable};
+use bevy_la_mesa::events::{AlignCardsInHand, AlignChipsOnTable, PlaceCardOffTable};
 use bevy_la_mesa::{Card, CardMetadata, CardOnTable, Chip, ChipArea, LaMesaPluginSettings};
 
 use std::fmt::Debug;
@@ -162,7 +162,6 @@ impl GameState {
             // TurnPhase::Event => TurnPhase::End,
             TurnPhase::ApplyCards => TurnPhase::End,
             TurnPhase::End => {
-                println!("player: {}, num_players: {}", self.player, self.num_players);
                 if self.player == self.num_players {
                     self.turn_number += 1;
                     // self.player = 1;
@@ -261,7 +260,7 @@ pub fn apply_card_effects(
     mut ew_discard_chip: EventWriter<DiscardChip>,
 ) {
     if state.phase == TurnPhase::ApplyCards {
-        println!("Applying card effects");
+        // println!("Applying card effects");
         let player = state.player;
 
         for (entity, card, card_on_table) in cards_on_table.iter() {
@@ -452,15 +451,73 @@ pub fn apply_card_effects(
 pub fn handle_next_phase(
     mut er_next_phase: EventReader<AdvancePhase>,
     mut ew_align_cards_in_hand: EventWriter<AlignCardsInHand>,
+    mut ew_align_chips_on_table: EventWriter<AlignChipsOnTable<ChipType>>,
     mut game_state: ResMut<GameState>,
 ) {
     for _ in er_next_phase.read() {
+        if game_state.phase == TurnPhase::End {
+            ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
+                chip_area: ChipArea {
+                    marker: 1,
+                    player: 1,
+                },
+                chip_type: ChipType::Cocaine,
+            });
+            ew_align_chips_on_table.send(AlignChipsOnTable {
+                chip_area: ChipArea {
+                    marker: 2,
+                    player: 1,
+                },
+                chip_type: ChipType::Cocaine,
+            });
+            ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
+                chip_area: ChipArea {
+                    marker: 1,
+                    player: 1,
+                },
+                chip_type: ChipType::Cannabis,
+            });
+            ew_align_chips_on_table.send(AlignChipsOnTable {
+                chip_area: ChipArea {
+                    marker: 2,
+                    player: 1,
+                },
+                chip_type: ChipType::Cannabis,
+            });
+            // ---
+            ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
+                chip_area: ChipArea {
+                    marker: 1,
+                    player: 2,
+                },
+                chip_type: ChipType::Cocaine,
+            });
+            ew_align_chips_on_table.send(AlignChipsOnTable {
+                chip_area: ChipArea {
+                    marker: 2,
+                    player: 2,
+                },
+                chip_type: ChipType::Cocaine,
+            });
+            ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
+                chip_area: ChipArea {
+                    marker: 1,
+                    player: 2,
+                },
+                chip_type: ChipType::Cannabis,
+            });
+            ew_align_chips_on_table.send(AlignChipsOnTable {
+                chip_area: ChipArea {
+                    marker: 2,
+                    player: 2,
+                },
+                chip_type: ChipType::Cannabis,
+            });
+        }
+
         game_state.advance();
 
-        println!("Aligning hand {:?}", game_state.phase);
-
         if game_state.phase == TurnPhase::ApplyCards {
-            println!("Alinging hand");
             ew_align_cards_in_hand.send(AlignCardsInHand {
                 player: game_state.player,
             });
@@ -470,7 +527,7 @@ pub fn handle_next_phase(
 
 pub fn handle_drop_chip(mut er_drop_chip: EventReader<DropChip>) {
     for drop_chip in er_drop_chip.read() {
-        println!("Dropping chip: {:?}", drop_chip.chip_type);
+        // println!("Dropping chip: {:?}", drop_chip.chip_type);
     }
 }
 
@@ -483,7 +540,7 @@ pub fn handle_move_chip(
         let (_, mut chip) = query.get_mut(move_chip.entity).unwrap();
 
         chip.turn_activation = state.turn_number;
-        println!("Moving chip: {}", chip.turn_activation);
+        // println!("Moving chip: {}", chip.turn_activation);
     }
 }
 
