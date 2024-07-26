@@ -87,7 +87,13 @@ fn handle_gameplay_action(
                     ew_advance_phase.send(AdvancePhase);
                 }
                 CardGameUIAction::ButtonSwitchPlayer => {
-                    ew_switch_player.send(SwitchPlayer);
+                    ew_switch_player.send(SwitchPlayer {
+                        player: match state.player {
+                            1 => 2,
+                            2 => 1,
+                            _ => 1,
+                        },
+                    });
                 }
                 _ => {}
             }

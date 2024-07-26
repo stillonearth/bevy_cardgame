@@ -56,7 +56,7 @@ impl Plugin for AppPlugin {
 
         app.add_plugins((LaMesaPlugin::<Kard, ChipType>::default(), ObjPlugin))
             .insert_resource(LaMesaPluginSettings::<Kard> {
-                num_players: 1,
+                num_players: 2,
                 hand_size: 5,
                 back_card_path: "tarjetas/back.png".to_string(),
                 deck: load_deck(2),

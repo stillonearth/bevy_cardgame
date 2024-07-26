@@ -218,7 +218,9 @@ impl GameState {
 pub struct AdvancePhase;
 
 #[derive(Event)]
-pub struct SwitchPlayer;
+pub struct SwitchPlayer {
+    pub player: usize,
+}
 
 #[derive(Event)]
 pub struct DropChip {
@@ -240,7 +242,7 @@ pub struct DiscardChip {
 }
 
 pub(super) fn plugin(app: &mut App) {
-    app.insert_resource(GameState::new(1))
+    app.insert_resource(GameState::new(2))
         .add_event::<AdvancePhase>()
         .add_event::<DropChip>()
         .add_event::<MoveChip>()
@@ -486,6 +488,7 @@ pub fn handle_next_phase(
     mut ew_align_cards_in_hand: EventWriter<AlignCardsInHand>,
     mut ew_align_chips_on_table: EventWriter<AlignChipsOnTable<ChipType>>,
     mut game_state: ResMut<GameState>,
+    mut ew_switch_player: EventWriter<SwitchPlayer>,
     mut phase_timer: ResMut<PhaseTimer>,
     time: Res<Time>,
 ) {
@@ -532,7 +535,6 @@ pub fn handle_next_phase(
                     },
                     chip_type: ChipType::Cannabis,
                 });
-                // ---
                 ew_align_chips_on_table.send(AlignChipsOnTable::<ChipType> {
                     chip_area: ChipArea {
                         marker: 1,
@@ -565,7 +567,15 @@ pub fn handle_next_phase(
             _ => {}
         }
 
+        let previous_player = game_state.player;
         game_state.advance();
+        let next_player = game_state.player;
+
+        if previous_player != next_player {
+            ew_switch_player.send(SwitchPlayer {
+                player: next_player,
+            });
+        }
         phase_timer.0.reset();
     }
 }
@@ -590,16 +600,12 @@ pub fn handle_move_chip(
 }
 
 pub fn handle_switch_player(
-    mut er_drop_chip: EventReader<SwitchPlayer>,
+    mut er_switch_player: EventReader<SwitchPlayer>,
     mut game_state: ResMut<GameState>,
     mut query: Query<(&mut Transform, &GameCamera)>,
 ) {
-    for _ in er_drop_chip.read() {
-        game_state.player = match game_state.player {
-            1 => 2,
-            2 => 1,
-            _ => 1,
-        };
+    for event in er_switch_player.read() {
+        game_state.player = event.player;
 
         for (mut transform, _) in query.iter_mut() {
             if game_state.player == 1 {
