@@ -28,12 +28,6 @@ fn spawn_level(_trigger: Trigger<SpawnLevel>, _commands: Commands) {}
 #[derive(Event, Debug)]
 pub struct SpawnBoard;
 
-#[derive(Component)]
-pub struct ResourceArea {
-    pub marker: usize,
-    pub player: usize,
-}
-
 fn spawn_board(
     _trigger: Trigger<SpawnBoard>,
     mut commands: Commands,
@@ -106,10 +100,6 @@ fn spawn_board(
             transform: Transform::from_translation(Vec3::new(1.2, 0.0, 3.5 * 1.2 / 2.0 + 0.1)),
             ..default()
         },
-        ResourceArea {
-            marker: 1,
-            player: 1,
-        },
         Name::new("Resources - Production - Player 1"),
     ));
 
@@ -125,10 +115,6 @@ fn spawn_board(
             transform: Transform::from_translation(Vec3::new(1.2, 0.0, -(3.5 * 1.2 / 2.0 + 0.1)))
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
             ..default()
-        },
-        ResourceArea {
-            marker: 1,
-            player: 2,
         },
         Name::new("Resources - Production - Player 2"),
     ));
@@ -152,10 +138,6 @@ fn spawn_board(
             transform: Transform::from_translation(Vec3::new(4.5, 0.0, 3.5 * 1.2 / 2.0 + 0.1)),
             ..default()
         },
-        ResourceArea {
-            marker: 2,
-            player: 1,
-        },
         Name::new("Resources - Sales - Player 1"),
     ));
 
@@ -171,10 +153,6 @@ fn spawn_board(
             transform: Transform::from_translation(Vec3::new(4.5, 0.0, -(3.5 * 1.2 / 2.0 + 0.1)))
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
             ..default()
-        },
-        ResourceArea {
-            marker: 2,
-            player: 2,
         },
         Name::new("Resources - Sales - Player 2"),
     ));
@@ -192,7 +170,7 @@ fn spawn_board(
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-3.9, 0.0, 2.8))
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI / 2.0)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {
@@ -208,7 +186,7 @@ fn spawn_board(
             material: face_material.clone(),
             transform: Transform::from_translation(Vec3::new(-3.9, 0.0, -2.8))
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI / 2.0)),
-            // visibility: Visibility::Hidden,
+            visibility: Visibility::Hidden,
             ..default()
         },
         PlayArea {

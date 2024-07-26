@@ -373,14 +373,14 @@ pub fn apply_card_effects(
                     }
 
                     if common_chips < cannabis_chips_on_table.len() {
-                        for i in common_chips..cannabis_chips_on_table.len() {
-                            entities_to_move.push(cannabis_chips_on_table[i].0);
+                        for chip in cannabis_chips_on_table.iter().skip(common_chips) {
+                            entities_to_move.push(chip.0);
                         }
                     }
 
                     if common_chips < cocaine_chips_on_table.len() {
-                        for i in common_chips..cocaine_chips_on_table.len() {
-                            entities_to_move.push(cocaine_chips_on_table[i].0);
+                        for chip in cocaine_chips_on_table.iter().skip(common_chips) {
+                            entities_to_move.push(chip.0);
                         }
                     }
 
