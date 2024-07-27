@@ -217,7 +217,7 @@ impl GameState {
             turn_number: 1,
             phase: TurnPhase::Prepare,
             player: 1,
-            bank: vec![0; num_players],
+            bank: vec![10000; num_players],
             num_players,
             effects: vec![],
         }
@@ -720,9 +720,7 @@ pub fn handle_move_chip(
 ) {
     for move_chip in er_drop_chip.read() {
         let (_, mut chip) = query.get_mut(move_chip.entity).unwrap();
-
         chip.turn_activation_2 = state.turn_number;
-        // println!("Moving chip: {}", chip.turn_activation_2);
     }
 }
 
