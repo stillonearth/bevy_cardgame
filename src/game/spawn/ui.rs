@@ -24,6 +24,7 @@ pub enum CardGameUIAction {
     LabelTurnPhase,
     LabelPhaseDescription,
     LabelBank,
+    LabelEffects,
 }
 
 pub(super) fn plugin(app: &mut App) {
@@ -51,9 +52,7 @@ fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
                 ..default()
             },
         ))
-        // todo: this does not nothing
         .insert(StateScoped(Screen::Playing))
-        // .insert(StateScoped(TurnPhase::Prepare))
         .with_children(|children| {
             children
                 .label("Turn number: 1")
@@ -67,6 +66,9 @@ fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
             children
                 .label("Phase Description")
                 .insert(CardGameUIAction::LabelPhaseDescription);
+            children
+                .label("Effects")
+                .insert(CardGameUIAction::LabelEffects);
             children
                 .label("Bank: $0")
                 .insert(CardGameUIAction::LabelBank);

@@ -157,6 +157,10 @@ fn handle_labels(
                 CardGameUIAction::LabelBank => {
                     text.sections[0].value = format!("Bank: ${}", state.get_balance(state.player));
                 }
+                CardGameUIAction::LabelEffects => {
+                    text.sections[0].value =
+                        format!("Effects: [{:?}]", state.get_effects(state.player));
+                }
             }
         }
     }

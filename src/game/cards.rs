@@ -161,9 +161,24 @@ pub enum TurnPhase {
     End,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum EffectType {
+    Drought,
+    Attack,
+}
+
+#[derive(Clone, Debug)]
+pub struct Effect {
+    pub effect_type: EffectType,
+    pub player: usize,
+    pub turn_number: usize,
+    pub duration: usize,
+}
+
 #[derive(Resource)]
 pub struct GameState {
     pub turn_number: usize,
+    pub effects: Vec<Effect>,
     pub phase: TurnPhase,
     pub player: usize,
     pub bank: Vec<u16>,
@@ -175,7 +190,8 @@ impl GameState {
         self.phase = match self.phase {
             TurnPhase::Prepare => TurnPhase::PlaceCardsOnTable,
             TurnPhase::PlaceCardsOnTable => TurnPhase::DrawEventCard,
-            TurnPhase::DrawEventCard => TurnPhase::ApplyProductionCards,
+            TurnPhase::DrawEventCard => TurnPhase::ApplyEventCard,
+            TurnPhase::ApplyEventCard => TurnPhase::ApplyProductionCards,
             TurnPhase::ApplyProductionCards => TurnPhase::ApplyTransportationCards,
             TurnPhase::ApplyTransportationCards => TurnPhase::ApplySalesCards,
             TurnPhase::ApplySalesCards => TurnPhase::End,
@@ -192,7 +208,8 @@ impl GameState {
                 println!("Invalid phase: {:?}", self.phase);
                 TurnPhase::End
             }
-        }
+        };
+        self.remove_expired_effects();
     }
 
     pub fn new(num_players: usize) -> Self {
@@ -202,6 +219,7 @@ impl GameState {
             player: 1,
             bank: vec![0; num_players],
             num_players,
+            effects: vec![],
         }
     }
 
@@ -222,6 +240,28 @@ impl GameState {
 
     pub fn get_balance(&self, player: usize) -> u16 {
         self.bank[player - 1]
+    }
+
+    pub fn add_effect(&mut self, effect_type: EffectType, duration: usize) {
+        self.effects.push(Effect {
+            effect_type: effect_type,
+            player: self.player,
+            turn_number: self.turn_number,
+            duration,
+        });
+    }
+
+    pub fn get_effects(&self, player: usize) -> Vec<Effect> {
+        self.effects
+            .iter()
+            .filter(|effect| effect.player == player)
+            .cloned()
+            .collect()
+    }
+
+    pub fn remove_expired_effects(&mut self) {
+        self.effects
+            .retain(|effect| effect.turn_number + effect.duration > self.turn_number);
     }
 }
 
@@ -280,7 +320,7 @@ pub fn apply_card_effects(
     cards_on_table: Query<(Entity, &Card<Kard>, &CardOnTable)>,
     cards_in_deck: Query<(Entity, &Transform, &Card<Kard>, &Deck)>,
     chips_on_table: Query<(Entity, &Transform, &Chip<ChipType>, &ChipArea)>,
-    event_cards_on_table: Query<(Entity, &ActiveEventCard)>,
+    event_cards_on_table: Query<(Entity, &Card<Kard>, &ActiveEventCard)>,
     mut ew_place_card_off_table: EventWriter<PlaceCardOffTable>,
     mut ew_place_card_on_table: EventWriter<PlaceCardOnTable>,
     mut ew_drop_chip: EventWriter<DropChip>,
@@ -495,7 +535,7 @@ pub fn apply_card_effects(
         TurnPhase::DrawEventCard => {
             let n_event_cards_from = event_cards_on_table
                 .iter()
-                .filter(|(_, active_event_card)| active_event_card.player == player)
+                .filter(|(_, _, active_event_card)| active_event_card.player == player)
                 .count();
 
             if n_event_cards_from == 0 {
@@ -520,7 +560,7 @@ pub fn apply_card_effects(
         }
         TurnPhase::End => {
             if state.player == state.num_players {
-                for (entity, _) in event_cards_on_table.iter() {
+                for (entity, _, _) in event_cards_on_table.iter() {
                     commands.entity(entity).remove::<ActiveEventCard>();
                     ew_place_card_off_table.send(PlaceCardOffTable {
                         card_entity: entity,
@@ -528,6 +568,24 @@ pub fn apply_card_effects(
                     });
                 }
             }
+        }
+        TurnPhase::ApplyEventCard => {
+            let event_cards = event_cards_on_table
+                .iter()
+                .filter(|(_, _, active_event_card)| active_event_card.player == player)
+                .collect::<Vec<_>>();
+
+            for (_, card, _) in event_cards {
+                let card_type = card.data.card_type;
+                match card_type {
+                    CardType::Drought => {
+                        state.add_effect(EffectType::Drought, 3);
+                    }
+                    _ => {}
+                }
+            }
+
+            state.advance();
         }
         _ => {}
     }
