@@ -6,8 +6,12 @@ use bevy_la_mesa::{
 };
 use bevy_tweening::{lens::TransformPositionLens, Animator, EaseFunction, Tween};
 
-use crate::game::cards::{
-    load_event_deck, load_playing_deck, ChipType, DiscardChip, DropChip, GameState, Kard, MoveChip,
+use crate::game::{
+    assets::{ChipModel, HandleMap},
+    cards::{
+        load_event_deck, load_playing_deck, ChipType, DiscardChip, DropChip, GameState, Kard,
+        MoveChip,
+    },
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -370,6 +374,7 @@ pub fn handle_drop_chip(
     mut er_drop_chip: EventReader<DropChip>,
     query: Query<(Entity, &ChipArea, &Chip<ChipType>)>,
     game_state: Res<GameState>,
+    chip_model_handles: Res<HandleMap<ChipModel>>,
 ) {
     let mut cocaine_counter = 0;
     let mut cannabis_counter = 0;
@@ -384,11 +389,8 @@ pub fn handle_drop_chip(
             .count();
 
         let model = match drop_chip.chip_type {
-            ChipType::Cannabis => asset_server
-                .load("models/chip-cannabis/chip_for_tabletop_gam_0723233549_preview.obj"),
-            ChipType::Cocaine => {
-                asset_server.load("models/chip-cocaine/chip_for_tabletop_gam_0723233917_refine.obj")
-            }
+            ChipType::Cannabis => chip_model_handles.get(&ChipModel::Cannabis).unwrap(),
+            ChipType::Cocaine => chip_model_handles.get(&ChipModel::Cocaine).unwrap(),
         };
 
         let mut initial_translation = match drop_chip.chip_type {
@@ -417,7 +419,7 @@ pub fn handle_drop_chip(
 
         commands.spawn((
             SceneBundle {
-                scene: model,
+                scene: model.clone(),
                 transform: match drop_chip.chip_type {
                     ChipType::Cannabis => {
                         Transform::from_xyz(0.6, 12.0, -5.2).with_scale(Vec3::ONE * 1.0)

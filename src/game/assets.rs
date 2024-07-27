@@ -8,6 +8,9 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<HandleMap<ImageKey>>();
     app.init_resource::<HandleMap<ImageKey>>();
 
+    app.register_type::<HandleMap<ChipModel>>();
+    app.init_resource::<HandleMap<ChipModel>>();
+
     app.register_type::<HandleMap<SfxKey>>();
     app.init_resource::<HandleMap<SfxKey>>();
 
@@ -36,6 +39,35 @@ impl FromWorld for HandleMap<ImageKey> {
                 },
             ),
         )]
+        .into()
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Reflect)]
+pub enum ChipModel {
+    Cocaine,
+    Cannabis,
+}
+
+impl AssetKey for ChipModel {
+    type Asset = Scene;
+}
+
+impl FromWorld for HandleMap<ChipModel> {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.resource::<AssetServer>();
+        [
+            (
+                ChipModel::Cocaine,
+                asset_server
+                    .load("models/chip-cannabis/chip_for_tabletop_gam_0723233549_preview.obj"),
+            ),
+            (
+                ChipModel::Cannabis,
+                asset_server
+                    .load("models/chip-cocaine/chip_for_tabletop_gam_0723233917_refine.obj"),
+            ),
+        ]
         .into()
     }
 }

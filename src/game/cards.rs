@@ -337,26 +337,28 @@ pub fn apply_card_effects(
     {
         match state.phase {
             TurnPhase::ApplyProductionCards => match card.data.card_type {
-                CardType::Cocaine => {
-                    let event = DropChip {
-                        chip_type: ChipType::Cocaine,
-                        area: 1,
-                        player,
-                    };
-                    ew_drop_chip.send(event);
-
-                    ew_place_card_off_table.send(PlaceCardOffTable {
-                        card_entity: entity,
-                        deck_marker: 1,
+                CardType::Cocaine | CardType::Cannabis => {
+                    let production_power = 5;
+                    let discount = state.get_effects(player).iter().fold(0, |acc, effect| {
+                        match effect.effect_type {
+                            EffectType::Attack => acc + 1,
+                            EffectType::Drought => acc + 1,
+                            _ => acc,
+                        }
                     });
-                }
-                CardType::Cannabis => {
-                    let event = DropChip {
-                        chip_type: ChipType::Cannabis,
-                        area: 1,
-                        player,
-                    };
-                    ew_drop_chip.send(event);
+
+                    for _ in 0..(production_power - discount).max(0) {
+                        let event = DropChip {
+                            chip_type: match card.data.card_type {
+                                CardType::Cocaine => ChipType::Cocaine,
+                                CardType::Cannabis => ChipType::Cannabis,
+                                _ => ChipType::Cocaine,
+                            },
+                            area: 1,
+                            player,
+                        };
+                        ew_drop_chip.send(event);
+                    }
 
                     ew_place_card_off_table.send(PlaceCardOffTable {
                         card_entity: entity,
@@ -435,7 +437,7 @@ pub fn apply_card_effects(
                             player,
                         };
                         ew_move_chip.send(event);
-                        chip_value -= 10;
+                        chip_value -= 2;
                     }
 
                     ew_place_card_off_table.send(PlaceCardOffTable {
@@ -514,7 +516,7 @@ pub fn apply_card_effects(
                         let event = DiscardChip { entity };
 
                         ew_discard_chip.send(event);
-                        chip_value -= 10;
+                        chip_value -= 2;
 
                         state.increase_bank(player, 100);
                     }
@@ -580,6 +582,9 @@ pub fn apply_card_effects(
                 match card_type {
                     CardType::Drought => {
                         state.add_effect(EffectType::Drought, 3);
+                    }
+                    CardType::Attack => {
+                        state.add_effect(EffectType::Attack, 2);
                     }
                     _ => {}
                 }
