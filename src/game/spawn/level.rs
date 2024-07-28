@@ -636,7 +636,7 @@ pub fn update_race_gem_positions(
     mut query: Query<(Entity, &RacingGem, &mut Transform)>,
     game_state: Res<GameState>,
 ) {
-    let goal = 100000.0;
+    let goal = 50000.0;
     for (_, gem, mut transform) in query.iter_mut() {
         let radius = match gem.player {
             1 => 4.2,

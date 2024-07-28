@@ -5,13 +5,18 @@ use bevy_la_mesa::{
 };
 
 use super::{
-    cards::{AdvancePhase, ChipType, DropChip, GameState, MoveChip, SwitchPlayer, TurnPhase},
+    cards::{
+        AdvancePhase, ChipType, DropChip, GameOver, GameState, MoveChip, SwitchPlayer, TurnPhase,
+    },
     spawn::ui::CardGameUIAction,
 };
 use crate::ui::prelude::InteractionQuery;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, (handle_gameplay_action, handle_labels));
+    app.add_systems(
+        Update,
+        (handle_gameplay_action, handle_labels, handle_game_over),
+    );
 }
 
 fn handle_gameplay_action(
@@ -162,7 +167,20 @@ fn handle_labels(
                     text.sections[0].value =
                         format!("Effects: {:?}", state.get_effects(state.player));
                 }
+                CardGameUIAction::LabelGameOver => {}
             }
+        }
+    }
+}
+
+pub fn handle_game_over(
+    mut query: Query<(&CardGameUIAction, &mut Text, &mut Visibility)>,
+    mut er_game_over: EventReader<GameOver>,
+) {
+    for event in er_game_over.read() {
+        for (_, mut text, mut visibility) in query.iter_mut() {
+            *visibility = Visibility::Visible;
+            text.sections[0].value = format!("Game Over; {} player won!", event.player_won);
         }
     }
 }

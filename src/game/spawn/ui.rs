@@ -25,6 +25,7 @@ pub enum CardGameUIAction {
     LabelPhaseDescription,
     LabelBank,
     LabelEffects,
+    LabelGameOver,
 }
 
 pub(super) fn plugin(app: &mut App) {
@@ -90,6 +91,35 @@ fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
             // children
             //     .button("Move Chip")
             //     .insert(CardGameUIAction::ButtonMoveChip);
+        });
+
+    let text = Text::from_section(
+        "GAME OVER",
+        TextStyle {
+            font_size: 100.0,
+            color: Color::WHITE,
+            ..default()
+        },
+    );
+
+    // root node
+    commands
+        .spawn((NodeBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                left: Val::Px(50.),
+                top: Val::Percent(50.),
+                ..Default::default()
+            },
+            ..Default::default()
+        },))
+        .with_children(|parent| {
+            parent
+                .spawn(TextBundle {
+                    text,
+                    ..Default::default()
+                })
+                .insert((CardGameUIAction::LabelGameOver,));
         });
 }
 

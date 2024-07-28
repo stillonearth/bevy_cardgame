@@ -56,7 +56,7 @@ impl CardMetadata for Kard {
 pub fn load_playing_deck(num_players: usize) -> Vec<Kard> {
     let attack = Kard {
         card_type: CardType::Attack,
-        price: 1000,
+        price: 300,
         filename: "tarjetas/attack.png".to_string(),
     };
 
@@ -86,7 +86,7 @@ pub fn load_playing_deck(num_players: usize) -> Vec<Kard> {
 
     let train = Kard {
         card_type: CardType::Train,
-        price: 1000,
+        price: 600,
         filename: "tarjetas/train.png".to_string(),
     };
 
@@ -209,7 +209,7 @@ impl GameState {
             turn_number: 1,
             phase: TurnPhase::Prepare,
             player: 1,
-            bank: vec![10000; num_players],
+            bank: vec![5000; num_players],
             num_players,
             effects: vec![],
         }
@@ -289,6 +289,13 @@ pub struct DiscardChip {
     pub entity: Entity,
 }
 
+#[derive(Event)]
+pub struct GameOver {
+    pub player_won: usize,
+}
+
+// Plugin
+
 pub(super) fn plugin(app: &mut App) {
     app.insert_resource(GameState::new(2))
         .add_event::<AdvancePhase>()
@@ -296,6 +303,7 @@ pub(super) fn plugin(app: &mut App) {
         .add_event::<MoveChip>()
         .add_event::<DiscardChip>()
         .add_event::<SwitchPlayer>()
+        .add_event::<GameOver>()
         .insert_resource(PhaseTimer(Timer::from_seconds(0.3, TimerMode::Once)))
         .add_systems(
             Update,
@@ -305,6 +313,7 @@ pub(super) fn plugin(app: &mut App) {
                 handle_drop_chip,
                 handle_move_chip,
                 handle_switch_player,
+                check_game_over_conditions,
             ),
         );
 }
@@ -475,7 +484,7 @@ pub fn apply_card_effects(
                     let mut entities_to_discard: Vec<Entity> = vec![];
                     let mut chip_value = match card.data.card_type {
                         CardType::Export => 50,
-                        CardType::LocalMarket => 10,
+                        CardType::LocalMarket => 20,
                         _ => 0,
                     };
 
@@ -512,7 +521,13 @@ pub fn apply_card_effects(
                         ew_discard_chip.send(event);
                         chip_value -= 2;
 
-                        state.change_balance(player, 100);
+                        let cost: i32 = match card.data.card_type {
+                            CardType::Cocaine => 800,
+                            CardType::Cannabis => 400,
+                            _ => 0,
+                        };
+
+                        state.change_balance(player, cost);
                     }
 
                     ew_place_card_off_table.send(PlaceCardOffTable {
@@ -751,6 +766,48 @@ pub fn handle_switch_player(
                 *transform = Transform::from_xyz(-3.0, 12.0, -15.0)
                     .looking_at(Vec3::ZERO + Vec3::new(-3.0, 0.0, 0.0), Vec3::Y);
             }
+        }
+    }
+}
+
+pub fn check_game_over_conditions(
+    mut er_advance_phase: EventReader<AdvancePhase>,
+    game_state: Res<GameState>,
+    mut ew_game_over_event: EventWriter<GameOver>,
+) {
+    for _ in er_advance_phase.read() {
+        let funds_per_player: Vec<i32> = (1..=game_state.num_players)
+            .map(|player| game_state.get_balance(player))
+            .collect();
+
+        let lowest_funds = *funds_per_player.iter().min().unwrap();
+
+        let highest_funds = *funds_per_player.iter().max().unwrap();
+        let index_highest_funds = funds_per_player
+            .iter()
+            .position(|&r| r == highest_funds)
+            .unwrap();
+        let total_players = game_state.num_players;
+
+        if total_players == 2 && lowest_funds <= 0 {
+            ew_game_over_event.send(GameOver {
+                player_won: index_highest_funds + 1,
+            });
+            return;
+        }
+
+        if highest_funds >= 50000 {
+            ew_game_over_event.send(GameOver {
+                player_won: index_highest_funds + 1,
+            });
+            return;
+        }
+
+        if game_state.turn_number >= 20 {
+            ew_game_over_event.send(GameOver {
+                player_won: index_highest_funds + 1,
+            });
+            return;
         }
     }
 }

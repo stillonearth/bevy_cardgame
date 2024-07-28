@@ -864,8 +864,7 @@ dependencies = [
 
 [[package]]
 name = "bevy_la_mesa"
-version = "0.0.5"
-source = "git+https://github.com/stillonearth/bevy_la_mesa?branch=main#514927696c76693080fe580554eb3b55ca5da359"
+version = "0.0.7"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
