@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_la_mesa::events::{CardPress, PlaceCardOnTable};
 use bevy_la_mesa::{Card, CardOnTable, Hand};
 
-use crate::game::cards::Kard;
+use crate::game::cards::{GameState, Kard};
 use crate::screen::Screen;
 use crate::ui::widgets::Widgets;
 
@@ -98,14 +98,21 @@ pub fn handle_card_press(
     query_cards_in_hand: Query<(Entity, &Card<Kard>, &Hand)>,
     query_cards_on_table: Query<(Entity, &Card<Kard>, &CardOnTable)>,
     mut ew_place_card_on_table: EventWriter<PlaceCardOnTable>,
+    mut state: ResMut<GameState>,
 ) {
+    let player = state.player;
     for event in card_press.read() {
         let hand = query_cards_in_hand.get(event.card_entity).ok();
         if hand.is_none() {
             continue;
         }
-        let hand = hand.unwrap().2;
+        let (_, kard, hand) = hand.unwrap();
 
+        if kard.data.price > state.get_balance(state.player) {
+            continue;
+        }
+
+        state.change_balance(player, -kard.data.price);
         let markers: Vec<usize> = query_cards_on_table
             .iter()
             .filter(|(_, _, t)| t.player == hand.player)

@@ -58,12 +58,12 @@ impl FromWorld for HandleMap<ChipModel> {
         let asset_server = world.resource::<AssetServer>();
         [
             (
-                ChipModel::Cocaine,
+                ChipModel::Cannabis,
                 asset_server
                     .load("models/chip-cannabis/chip_for_tabletop_gam_0723233549_preview.obj"),
             ),
             (
-                ChipModel::Cannabis,
+                ChipModel::Cocaine,
                 asset_server
                     .load("models/chip-cocaine/chip_for_tabletop_gam_0723233917_refine.obj"),
             ),

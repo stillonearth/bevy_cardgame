@@ -14,16 +14,14 @@ pub struct PhaseTimer(pub Timer);
 
 #[derive(Clone, Copy, Debug, Default)]
 pub enum CardType {
+    #[default]
     Attack,
     BigDeal,
-    #[default]
     Cocaine,
     Cannabis,
     Drought,
-    Espionage,
     Export,
     LocalMarket,
-    PoliceBribe,
     Train,
     Truck,
 }
@@ -43,6 +41,7 @@ pub enum ChipType {
 #[derive(Default, Clone, Debug)]
 pub struct Kard {
     pub card_type: CardType,
+    pub price: i32,
     pub filename: String,
 }
 
@@ -55,48 +54,45 @@ impl CardMetadata for Kard {
 }
 
 pub fn load_playing_deck(num_players: usize) -> Vec<Kard> {
-    let _attack = Kard {
+    let attack = Kard {
         card_type: CardType::Attack,
+        price: 1000,
         filename: "tarjetas/attack.png".to_string(),
     };
 
     let cocaine = Kard {
         card_type: CardType::Cocaine,
+        price: 1000,
         filename: "tarjetas/cocaine.png".to_string(),
-    };
-
-    let _espionage = Kard {
-        card_type: CardType::Espionage,
-        filename: "tarjetas/espionage.png".to_string(),
     };
 
     let export = Kard {
         card_type: CardType::Export,
+        price: 0,
         filename: "tarjetas/export.png".to_string(),
     };
 
     let local_market = Kard {
         card_type: CardType::LocalMarket,
+        price: 0,
         filename: "tarjetas/local-market.png".to_string(),
     };
 
     let marijuana = Kard {
         card_type: CardType::Cannabis,
+        price: 500,
         filename: "tarjetas/marijuana.png".to_string(),
-    };
-
-    let _police_bribe = Kard {
-        card_type: CardType::PoliceBribe,
-        filename: "tarjetas/police-bribe.png".to_string(),
     };
 
     let train = Kard {
         card_type: CardType::Train,
+        price: 1000,
         filename: "tarjetas/train.png".to_string(),
     };
 
     let truck = Kard {
         card_type: CardType::Truck,
+        price: 300,
         filename: "tarjetas/truck.png".to_string(),
     };
 
@@ -118,11 +114,7 @@ pub fn load_playing_deck(num_players: usize) -> Vec<Kard> {
 
         deck.push(export.clone());
 
-        // deck.push(espionage.clone());
-
-        // deck.push(attack.clone());
-
-        // deck.push(police_bribe.clone());
+        deck.push(attack.clone());
     }
 
     deck
@@ -131,11 +123,13 @@ pub fn load_playing_deck(num_players: usize) -> Vec<Kard> {
 pub fn load_event_deck(num_players: usize) -> Vec<Kard> {
     let big_deal = Kard {
         card_type: CardType::BigDeal,
+        price: 0,
         filename: "tarjetas/big-deal.png".to_string(),
     };
 
     let drought = Kard {
         card_type: CardType::Drought,
+        price: 0,
         filename: "tarjetas/drought.png".to_string(),
     };
 
@@ -158,10 +152,11 @@ pub enum TurnPhase {
     ApplyProductionCards,
     ApplyTransportationCards,
     ApplySalesCards,
+    ApplyActionCards,
     End,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum EffectType {
     Drought,
     Attack,
@@ -181,7 +176,7 @@ pub struct GameState {
     pub effects: Vec<Effect>,
     pub phase: TurnPhase,
     pub player: usize,
-    pub bank: Vec<u16>,
+    pub bank: Vec<i32>,
     num_players: usize,
 }
 
@@ -194,7 +189,8 @@ impl GameState {
             TurnPhase::ApplyEventCard => TurnPhase::ApplyProductionCards,
             TurnPhase::ApplyProductionCards => TurnPhase::ApplyTransportationCards,
             TurnPhase::ApplyTransportationCards => TurnPhase::ApplySalesCards,
-            TurnPhase::ApplySalesCards => TurnPhase::End,
+            TurnPhase::ApplySalesCards => TurnPhase::ApplyActionCards,
+            TurnPhase::ApplyActionCards => TurnPhase::End,
             TurnPhase::End => {
                 if self.player == self.num_players {
                     self.turn_number += 1;
@@ -203,10 +199,6 @@ impl GameState {
                     self.player += 1;
                 }
                 TurnPhase::Prepare
-            }
-            _ => {
-                println!("Invalid phase: {:?}", self.phase);
-                TurnPhase::End
             }
         };
         self.remove_expired_effects();
@@ -230,22 +222,25 @@ impl GameState {
         self.bank = vec![0; self.num_players];
     }
 
-    pub fn increase_bank(&mut self, player: usize, amount: u16) {
+    pub fn change_balance(&mut self, player: usize, amount: i32) {
         self.bank[player - 1] += amount;
     }
 
-    pub fn draw_bank(&mut self, player: usize, amount: u16) {
+    pub fn draw_bank(&mut self, player: usize, amount: i32) {
         self.bank[player - 1] -= amount;
     }
 
-    pub fn get_balance(&self, player: usize) -> u16 {
+    pub fn get_balance(&self, player: usize) -> i32 {
         self.bank[player - 1]
     }
 
-    pub fn add_effect(&mut self, effect_type: EffectType, duration: usize) {
+    pub fn add_effect(&mut self, effect_type: EffectType, duration: usize, player: usize) {
+        self.effects
+            .retain(|effect| !(effect.effect_type == effect_type && effect.player == player));
+
         self.effects.push(Effect {
             effect_type: effect_type,
-            player: self.player,
+            player: player,
             turn_number: self.turn_number,
             duration,
         });
@@ -343,7 +338,6 @@ pub fn apply_card_effects(
                         match effect.effect_type {
                             EffectType::Attack => acc + 1,
                             EffectType::Drought => acc + 1,
-                            _ => acc,
                         }
                     });
 
@@ -518,8 +512,27 @@ pub fn apply_card_effects(
                         ew_discard_chip.send(event);
                         chip_value -= 2;
 
-                        state.increase_bank(player, 100);
+                        state.change_balance(player, 100);
                     }
+
+                    ew_place_card_off_table.send(PlaceCardOffTable {
+                        card_entity: entity,
+                        deck_marker: 1,
+                    });
+                }
+                _ => {}
+            },
+            TurnPhase::ApplyActionCards => match card.data.card_type {
+                CardType::Attack => {
+                    state.add_effect(
+                        EffectType::Attack,
+                        2,
+                        match player {
+                            1 => 2,
+                            2 => 1,
+                            _ => 1,
+                        },
+                    );
 
                     ew_place_card_off_table.send(PlaceCardOffTable {
                         card_entity: entity,
@@ -581,11 +594,9 @@ pub fn apply_card_effects(
                 let card_type = card.data.card_type;
                 match card_type {
                     CardType::Drought => {
-                        state.add_effect(EffectType::Drought, 3);
+                        state.add_effect(EffectType::Drought, 3, player);
                     }
-                    CardType::Attack => {
-                        state.add_effect(EffectType::Attack, 2);
-                    }
+
                     _ => {}
                 }
             }
@@ -601,6 +612,7 @@ pub fn apply_card_effects(
         | TurnPhase::ApplySalesCards
         | TurnPhase::DrawEventCard
         | TurnPhase::ApplyEventCard
+        | TurnPhase::ApplyActionCards
         | TurnPhase::End => {
             ew_advance_phase.send(AdvancePhase);
         }

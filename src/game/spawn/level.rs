@@ -440,7 +440,6 @@ fn spawn_board(
 }
 
 pub fn handle_drop_chip(
-    asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut er_drop_chip: EventReader<DropChip>,
     query: Query<(Entity, &ChipArea, &Chip<ChipType>)>,
@@ -580,7 +579,7 @@ pub fn handle_move_chip_to_sales(
 pub fn discard_chip(
     mut commands: Commands,
     mut er_discard_chip: EventReader<DiscardChip>,
-    query: Query<(Entity, &Transform, &Chip<ChipType>)>,
+    _query: Query<(Entity, &Transform, &Chip<ChipType>)>,
 ) {
     for discard_chip in er_discard_chip.read() {
         if commands.get_entity(discard_chip.entity).is_none() {
@@ -613,7 +612,7 @@ pub fn render_hand_area(mut commands: Commands) {
     commands.spawn((
         Name::new("HandArea - Player 1"),
         TransformBundle {
-            local: Transform::from_translation(Vec3::new(0.0, 3.5, 5.8))
+            local: Transform::from_translation(Vec3::new(0.0, 1.5, 5.8))
                 .with_rotation(Quat::from_rotation_x(std::f32::consts::PI / 4.0)),
             ..default()
         },
@@ -623,7 +622,7 @@ pub fn render_hand_area(mut commands: Commands) {
     commands.spawn((
         Name::new("HandArea - Player 2"),
         TransformBundle {
-            local: Transform::from_translation(Vec3::new(0.0, 3.5, -5.8)).with_rotation(
+            local: Transform::from_translation(Vec3::new(0.0, 1.5, -5.8)).with_rotation(
                 Quat::from_rotation_x(-std::f32::consts::PI / 4.0)
                     * Quat::from_rotation_y(std::f32::consts::PI),
             ),
@@ -644,9 +643,9 @@ pub fn update_race_gem_positions(
             _ => 4.8,
         };
 
-        let current_score: u16 = game_state.get_balance(gem.player);
+        let current_score: i32 = game_state.get_balance(gem.player);
         let percent_of_lap = (current_score as f32) / goal;
-        let angle = percent_of_lap * std::f32::consts::PI * 2.0;
+        let angle = -percent_of_lap * std::f32::consts::PI * 2.0;
 
         transform.translation.x = -7.6 + radius * angle.cos();
         transform.translation.z = radius * angle.sin();

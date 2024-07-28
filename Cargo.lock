@@ -491,6 +491,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_cartel"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "bevy_la_mesa",
+ "bevy_obj",
+ "bevy_tweening",
+ "log",
+ "rand",
+]
+
+[[package]]
 name = "bevy_color"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -852,6 +865,7 @@ dependencies = [
 [[package]]
 name = "bevy_la_mesa"
 version = "0.0.5"
+source = "git+https://github.com/stillonearth/bevy_la_mesa?branch=main#514927696c76693080fe580554eb3b55ca5da359"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
@@ -1624,19 +1638,6 @@ dependencies = [
  "rustix",
  "wayland-backend",
  "wayland-client",
-]
-
-[[package]]
-name = "cardgame"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy-inspector-egui",
- "bevy_la_mesa",
- "bevy_obj",
- "bevy_tweening",
- "log",
- "rand",
 ]
 
 [[package]]

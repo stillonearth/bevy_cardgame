@@ -1,5 +1,5 @@
 [package]
-name = "cardgame"
+name = "bevy_cartel"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0 OR CC0-1.0"
@@ -13,7 +13,7 @@ log = { version = "0.4", features = [
 ] }
 rand = "0.8"
 bevy-inspector-egui = "0.25"
-bevy_la_mesa = {path="../bevy_la_mesa"}
+bevy_la_mesa = {git="https://github.com/stillonearth/bevy_la_mesa", branch="main"}
 bevy_obj = { version = "0.14", features = ["scene"] }
 bevy_tweening = "0.11"
 

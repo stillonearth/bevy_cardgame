@@ -145,6 +145,7 @@ fn handle_labels(
                             "Applying Transportation Cards".to_string()
                         }
                         TurnPhase::ApplySalesCards => "Applying Sales Cards".to_string(),
+                        TurnPhase::ApplyActionCards => "Applying Action Cards".to_string(),
                     };
                 }
                 CardGameUIAction::ButtonDropChip => {}
@@ -159,7 +160,7 @@ fn handle_labels(
                 }
                 CardGameUIAction::LabelEffects => {
                     text.sections[0].value =
-                        format!("Effects: [{:?}]", state.get_effects(state.player));
+                        format!("Effects: {:?}", state.get_effects(state.player));
                 }
             }
         }
