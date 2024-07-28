@@ -8,7 +8,7 @@ use super::{
     cards::{
         AdvancePhase, ChipType, DropChip, GameOver, GameState, MoveChip, SwitchPlayer, TurnPhase,
     },
-    spawn::ui::CardGameUIAction,
+    spawn::ui::{self, CardGameUIAction},
 };
 use crate::ui::prelude::InteractionQuery;
 
@@ -167,20 +167,31 @@ fn handle_labels(
                     text.sections[0].value =
                         format!("Effects: {:?}", state.get_effects(state.player));
                 }
-                CardGameUIAction::LabelGameOver => {}
+                _ => {}
             }
         }
     }
 }
 
 pub fn handle_game_over(
-    mut query: Query<(&CardGameUIAction, &mut Text, &mut Visibility)>,
+    mut query: Query<(&CardGameUIAction, &mut Text, &mut Visibility), With<Text>>,
+    mut game_over_container_visibility: Query<(&CardGameUIAction, &mut Visibility), Without<Text>>,
     mut er_game_over: EventReader<GameOver>,
 ) {
     for event in er_game_over.read() {
-        for (_, mut text, mut visibility) in query.iter_mut() {
+        for (ui_action, mut text, mut visibility) in query.iter_mut() {
+            if ui_action != &CardGameUIAction::LabelGameOver {
+                continue;
+            }
             *visibility = Visibility::Visible;
             text.sections[0].value = format!("Game Over; {} player won!", event.player_won);
+        }
+
+        for (ui_action, mut visibility) in game_over_container_visibility.iter_mut() {
+            if ui_action != &CardGameUIAction::ContainerGameOver {
+                continue;
+            }
+            *visibility = Visibility::Visible;
         }
     }
 }

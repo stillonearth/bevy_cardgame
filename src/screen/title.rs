@@ -49,7 +49,7 @@ fn enter_title(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..default()
                     },
                     image: UiImage::new(asset_server.load_with_settings(
-                        "images/laboratory.png",
+                        "images/cover-2.png",
                         |settings: &mut ImageLoaderSettings| {
                             settings.sampler = ImageSampler::nearest();
                         },

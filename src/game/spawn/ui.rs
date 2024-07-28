@@ -26,6 +26,7 @@ pub enum CardGameUIAction {
     LabelBank,
     LabelEffects,
     LabelGameOver,
+    ContainerGameOver,
 }
 
 pub(super) fn plugin(app: &mut App) {
@@ -73,9 +74,9 @@ fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
             children
                 .label("Bank: $0")
                 .insert(CardGameUIAction::LabelBank);
-            children
-                .button("Switch Player")
-                .insert(CardGameUIAction::ButtonSwitchPlayer);
+            // children
+            //     .button("Switch Player")
+            //     .insert(CardGameUIAction::ButtonSwitchPlayer);
             children
                 .button("Shuffle Deck")
                 .insert(CardGameUIAction::ButtonShuffleDeck);
@@ -104,22 +105,31 @@ fn spawn_card_game_ui(_trigger: Trigger<SpawnBoard>, mut commands: Commands) {
 
     // root node
     commands
-        .spawn((NodeBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                left: Val::Px(50.),
-                top: Val::Percent(50.),
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    flex_direction: FlexDirection::Column,
+                    row_gap: Val::Px(10.0),
+                    position_type: PositionType::Absolute,
+                    ..Default::default()
+                },
+                visibility: Visibility::Hidden,
                 ..Default::default()
             },
-            ..Default::default()
-        },))
+            Name::new("Game Over"),
+            CardGameUIAction::ContainerGameOver,
+        ))
         .with_children(|parent| {
             parent
                 .spawn(TextBundle {
                     text,
                     ..Default::default()
                 })
-                .insert((CardGameUIAction::LabelGameOver,));
+                .insert((CardGameUIAction::LabelGameOver));
         });
 }
 
