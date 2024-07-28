@@ -14,7 +14,7 @@ log = { version = "0.4", features = [
 rand = "0.8"
 bevy-inspector-egui = "0.25"
 # bevy_la_mesa = {git="https://github.com/stillonearth/bevy_la_mesa", branch="main"}
-bevy_la_mesa = {path="../bevy_la_mesa"}
+bevy_la_mesa = "0.0.7"
 bevy_obj = { version = "0.14", features = ["scene"] }
 bevy_tweening = "0.11"
 
