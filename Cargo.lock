@@ -865,6 +865,8 @@ dependencies = [
 [[package]]
 name = "bevy_la_mesa"
 version = "0.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4af4707128aeb8f55e130f0b32d37b493281e6a9ec43733278f41d04a9e16f3a"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
